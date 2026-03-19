@@ -1,10 +1,11 @@
 CPP = c++
-CPPFLAGS = -Wall -Wextra -Wshadow -Werror -std=c++98
+CPPFLAGS = -Wall -Wextra -Wshadow -Werror -std=c++98 -g
 DEPFLAGS = -MMD -MP
 
 NAME = webserv
 
-SRCS = srcs/main.cpp srcs/Socket.cpp
+SRCS = srcs/main.cpp srcs/Socket.cpp srcs/Connection.cpp \
+	   srcs/utils.cpp
 		
 OBJS_DIR = ./.obj
 OBJS = $(SRCS:%.cpp=$(OBJS_DIR)/%.o)

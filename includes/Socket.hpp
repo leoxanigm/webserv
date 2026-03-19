@@ -1,31 +1,29 @@
 #ifndef SOCKET_HPP
 #define SOCKET_HPP
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <poll.h>
-#include <vector>
-
+/**
+ * A socket listener class. Throws on error.
+ */
 class Socket
 {
 public:
-	Socket();
+	Socket(const char *host, const char *service);
 	Socket(const Socket &obj);
-	Socket &operator=(const Socket &obj);
 	~Socket();
 
-private:
-	std::vector<struct pollfd> _pollFds;
+	int fd(void) const;
+	const char *host() const;
+	const char *service() const;
 
-	int _getListenerSocket(void) const;
-	void _runPoll(int listener);
-	void _processConnections(int listener);
-	void _handleNewConnection(int listener);
-	void _handleClient(std::size_t index);
+private:
+	Socket();
+	Socket &operator=(const Socket &obj);
+
+	const char *_host;
+	const char *_service;
+	int _listener; // listener file descriptor
+
+	void _initListenerSocket(void);
 };
 
 #endif /* SOCKET_HPP */

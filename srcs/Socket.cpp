@@ -1,60 +1,47 @@
 #include <stdexcept>
 #include <string>
-#include <iostream>
 
-#include <cstdlib>
 #include <cstring>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <errno.h>
 
+#include "../includes/utils.hpp"
 #include "../includes/Socket.hpp"
 
-/**
- * Initializes a socket listener.
- * Throws on error.
- */
-Socket::Socket()
+Socket::Socket(const char *host, const char *service) : _host(host), _service(service)
 {
-	// Initialize listener on start
-	struct pollfd pFd;
-	pFd.fd = _getListenerSocket();
-	pFd.events = POLLIN;
-	pFd.revents = 0;
-
-	_pollFds.push_back(pFd);
-
-	std::cout << "webserv: waiting for connections...\n";
-
-	_runPoll(pFd.fd);
+	// Initialize listener on start,
+	_initListenerSocket(); // _listener
 }
 
-Socket::Socket(const Socket &obj)
+Socket::Socket(const Socket &obj) : _host(obj._host), _service(obj._service)
 {
-	_pollFds = obj._pollFds;
+	_listener = obj._listener;
 }
 
-Socket &Socket::operator=(const Socket &obj)
-{
-	if (this != &obj)
-		_pollFds = obj._pollFds;
+Socket::~Socket() {}
 
-	return *this;
+int Socket::fd(void) const
+{
+	return (_listener);
 }
 
-Socket::~Socket()
+const char *Socket::host() const
 {
-	std::vector<struct pollfd>::iterator it;
-	for (it = _pollFds.begin(); it != _pollFds.end(); it++)
-		close(it->fd);
+	return (_host);
 }
 
-int Socket::_getListenerSocket(void) const
+const char *Socket::service() const
 {
-	int listener;
-	int optVal = 1;
-	int retVal;
+	return (_service);
+}
+
+void Socket::_initListenerSocket(void)
+{
+	int listener, retVal, optVal = 1;
 
 	struct addrinfo addrInfoHints, *addrInfo, *addrInfoIt;
 
@@ -63,8 +50,8 @@ int Socket::_getListenerSocket(void) const
 	addrInfoHints.ai_socktype = SOCK_STREAM;
 	addrInfoHints.ai_flags = AI_PASSIVE; // get ip for me
 
-	if ((retVal = getaddrinfo(0, "9999", &addrInfoHints, &addrInfo)) != 0)
-		throw std::runtime_error(std::string(gai_strerror(retVal)));
+	if ((retVal = getaddrinfo(_host, _service, &addrInfoHints, &addrInfo)) != 0)
+		throw std::runtime_error("Error: " + std::string(gai_strerror(retVal)));
 
 	for (addrInfoIt = addrInfo; addrInfoIt != 0; addrInfoIt = addrInfoIt->ai_next)
 	{
@@ -74,14 +61,23 @@ int Socket::_getListenerSocket(void) const
 			addrInfoIt->ai_protocol);
 
 		if (listener < 0)
+		{
+			close(listener);
 			continue;
+		}
+
+		if (utils::setNonBlocking(listener) == -1)
+		{
+			close(listener);
+			continue;
+		}
 
 		// Allow bind without wait
 		// https://stackoverflow.com/a/3229926
 		if (setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal)) != 0)
 			continue;
 
-		if (bind(listener, addrInfo->ai_addr, addrInfo->ai_addrlen) != 0)
+		if (bind(listener, addrInfoIt->ai_addr, addrInfoIt->ai_addrlen) != 0)
 		{
 			close(listener);
 			continue;
@@ -93,7 +89,8 @@ int Socket::_getListenerSocket(void) const
 	if (addrInfoIt == 0)
 	{
 		close(listener);
-		throw std::runtime_error("Error: unable to bind to a socket.");
+		throw std::runtime_error(
+			"Error: unable to bind socket on port " + std::string(_service));
 	}
 
 	freeaddrinfo(addrInfo);
@@ -101,97 +98,9 @@ int Socket::_getListenerSocket(void) const
 	if (listen(listener, SOMAXCONN) != 0)
 	{
 		close(listener);
-		throw std::runtime_error("Error: unable to listen on a socket.");
+		throw std::runtime_error(
+			"Error: unable to listen socket on port " + std::string(_service));
 	}
 
-	return (listener);
-}
-
-void Socket::_runPoll(int listener)
-{
-	while (true)
-	{
-		errno = 0;
-
-		int pollCount = poll(&_pollFds[0], _pollFds.size(), -1);
-
-		if (pollCount == -1)
-			throw std::runtime_error(std::string(strerror(errno)));
-
-		_processConnections(listener);
-	}
-}
-
-void Socket::_processConnections(int listener)
-{
-	for (std::size_t i = 0; i < _pollFds.size(); i++)
-	{
-		// Someone ready to read or hangup
-		if (_pollFds[i].revents & (POLLIN | POLLHUP))
-		{
-			if (_pollFds[i].fd == listener) // New connection
-				_handleNewConnection(listener);
-			else
-				_handleClient(i);
-		}
-	}
-}
-
-void Socket::_handleNewConnection(int listener)
-{
-	struct sockaddr_storage remoteAddr;
-	socklen_t addrLen;
-	int newFd;
-	// char remoteIP[INET6_ADDRSTRLEN];
-
-	addrLen = sizeof(remoteAddr);
-
-	errno = 0;
-	newFd = accept(listener, (struct sockaddr *)&remoteAddr, &addrLen);
-
-	if (newFd == -1)
-		std::cerr << "ERROR: accepting new client: " << strerror(errno) << '\n';
-	else
-	{
-		struct pollfd newPFd;
-		newPFd.fd = newFd;
-		newPFd.events = POLLIN;
-		newPFd.revents = 0;
-		_pollFds.push_back(newPFd);
-
-		std::cout << "INFO: new connection on socket " << newFd << '\n';
-		// Maybe print more info using remoteIP char array?
-	}
-}
-
-// For testing, this should call a parser
-void Socket::_handleClient(std::size_t index)
-{
-	char buffer[256];
-	int senderFd = _pollFds[index].fd;
-
-	errno = 0;
-	int nBytes = recv(senderFd, buffer, sizeof(buffer) - 1, 0);
-
-	if (nBytes <= 0)
-	{
-		if (nBytes == 0) // connection closed
-			std::cout << "INFO: socket " << senderFd << " hang up\n";
-		else
-			std::cerr << "ERROR: receiving data: " << strerror(errno) << '\n';
-
-		close(senderFd);
-
-		// Remove client
-		_pollFds[index] = _pollFds[_pollFds.size() - 1];
-		_pollFds.pop_back();
-	}
-	else
-	{
-		buffer[nBytes] = '\0';
-		
-		std::cout << "INFO: received from " << senderFd
-				  << ": " << nBytes << " bytes. \n"
-				  << "Data: " << buffer << '\n';
-	}
+	_listener = listener;
 }
