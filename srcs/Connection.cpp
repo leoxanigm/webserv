@@ -7,6 +7,8 @@
 
 #include "../includes/utils.hpp"
 #include "../includes/Connection.hpp"
+#include "../includes/Client.hpp"
+#include "../includes/HTTPError.hpp"
 
 Connection::Connection() : _socket("localhost", "8080") // Remove
 {
@@ -17,7 +19,6 @@ Connection::Connection() : _socket("localhost", "8080") // Remove
 
 	_pollFds.push_back(pFd);
 
-	_initEvents();
 	_sigint = false;
 }
 
@@ -46,33 +47,9 @@ void Connection::openConnection(void)
 	_runPoll();
 }
 
-void Connection::closeConnection(int sig)
+void Connection::closeConnection()
 {
-	(void)sig;
 	_sigint = true;
-}
-
-/**
- * Attach a callback function for POLLIN, POLLOUT poll events.
- * Function will take file descriptor as argument and should return
- * a status 0 on success or -1 on failure.
- * In case of failure, the connection will close the file descriptor.
- */
-void Connection::attachEvent(short event, int (*callback)(int))
-{
-	if (event & (POLLIN | POLLOUT))
-		_events[event] = callback;
-}
-
-/**
- * Initialize default events for connections if none area attached
- */
-void Connection::_initEvents(void)
-{
-	// TODO:
-	// Read config and set default events
-
-	std::cout << "INFO: no default events attached\n"; // Remove
 }
 
 void Connection::_runPoll()
@@ -83,7 +60,7 @@ void Connection::_runPoll()
 		int pollCount = poll(&_pollFds[0], _pollFds.size(), -1);
 
 		if (pollCount == -1)
-			throw std::runtime_error("Error: " + std::string(std::strerror(errno)));
+			throw HTTPError(HTTPError::Code::INTERNAL_SERVER_ERROR);
 
 		_processConnections();
 	}
@@ -121,6 +98,17 @@ void Connection::_handleNewConnection()
 		return;
 	}
 
+	// TODO:
+	// add new client to _fdClientConn map
+	// wait POLLIN for the new client in poll in
+	// call client.handleRead() and then request pipe fd with getPipeFd();
+	// if there is a pipeFd, add it to _pollFds and _fdClientPipe.
+
+	// On events for POLLIN, POLLOUT, POLLHUP, POLLERR, call appropriate
+	// client method, passing the revent fd.
+	// I think that's all Connection needs to do, Client should handle
+	// request and response
+
 	struct pollfd newPFd;
 	newPFd.fd = newFd;
 	newPFd.events = POLLIN;
@@ -134,25 +122,27 @@ void Connection::_handleNewConnection()
 
 void Connection::_handleClient(std::size_t index, short event)
 {
-	int senderFd = _pollFds[index].fd;
-	int status = 0;
+	// TODO:
+	// Change function in accordance with the comments above
 
+	// int senderFd = _pollFds[index].fd;
+	// int status = 0;
 
-	// if (event & (POLLIN | POLLOUT))
-	if (event & POLLIN)
-	{
-		if (_events.count(event) == 1)
-			status = _events[event](senderFd);
-		else
-			std::cerr << "Error: _handleClient: callback not found: " << event << '\n';
-	}
+	// // if (event & (POLLIN | POLLOUT))
+	// if (event & POLLIN)
+	// {
+	// 	if (_events.count(event) == 1)
+	// 		status = _events[event](senderFd);
+	// 	else
+	// 		std::cerr << "Error: _handleClient: callback not found: " << event << '\n';
+	// }
 
-	if ((event & POLLHUP) || status == -1)
-	{
-		close(senderFd);
+	// if ((event & POLLHUP) || status == -1)
+	// {
+	// 	close(senderFd);
 
-		// Remove client
-		_pollFds[index] = _pollFds[_pollFds.size() - 1];
-		_pollFds.pop_back();
-	}
+	// 	// Remove client
+	// 	_pollFds[index] = _pollFds[_pollFds.size() - 1];
+	// 	_pollFds.pop_back();
+	// }
 }

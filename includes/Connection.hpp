@@ -6,6 +6,7 @@
 #include <poll.h>
 
 #include "Socket.hpp"
+#include "Client.hpp"
 
 /**
  * A class that handles one socket connection and its related events
@@ -18,8 +19,7 @@ public:
 	~Connection();
 
 	void openConnection(void);
-	void closeConnection(int sig);
-	void attachEvent(short event, int (*callBack)(int));
+	void closeConnection();
 
 private:
 	// Connection();
@@ -31,18 +31,16 @@ private:
 	// const Config _config;
 	Socket _socket;
 	std::vector<struct pollfd> _pollFds;
-	std::map<short, int (*)(int)> _events;
-	// Has a list of client, with flags equivalent to poll flags
-	// maps fd to client and calls appropriate client method
-
-	void _initEvents(void);
+	std::map<int, Client > _fdClientConn; // track fd for remote connections
+	std::map<int, Client &> _fdClientPipe; // track fd for server pipes
 
 	void _runPoll();
 	void _processConnections();
 	void _handleNewConnection();
 	void _handleClient(std::size_t index, short event);
+
+	int _addClient();
+	int _removeClient();
 };
-
-
 
 #endif /* CONNECTION_HPP */
