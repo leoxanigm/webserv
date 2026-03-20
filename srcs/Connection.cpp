@@ -95,7 +95,7 @@ void Connection::_processConnections()
 	{
 		if (_pollFds[i].revents & (POLLIN | POLLOUT | POLLHUP))
 		{
-			if (_pollFds[i].fd == _socket.fd())
+			if ((_pollFds[i].revents & POLLIN) && (_pollFds[i].fd == _socket.fd()))
 				_handleNewConnection();
 			else
 				_handleClient(i, _pollFds[i].revents);
@@ -136,6 +136,7 @@ void Connection::_handleClient(std::size_t index, short event)
 {
 	int senderFd = _pollFds[index].fd;
 	int status = 0;
+
 
 	// if (event & (POLLIN | POLLOUT))
 	if (event & POLLIN)

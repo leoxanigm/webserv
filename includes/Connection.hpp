@@ -32,6 +32,8 @@ private:
 	Socket _socket;
 	std::vector<struct pollfd> _pollFds;
 	std::map<short, int (*)(int)> _events;
+	// Has a list of client, with flags equivalent to poll flags
+	// maps fd to client and calls appropriate client method
 
 	void _initEvents(void);
 

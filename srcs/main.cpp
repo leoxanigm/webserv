@@ -29,6 +29,8 @@ int testRecvHandler(int fd)
 
 	buffer[nBytes] = '\0';
 
+	std::cout << buffer << '\n';
+
 	// std::string rawRequest(buffer, nBytes);
 	// HTTPRequest request(rawRequest);
 
@@ -43,27 +45,26 @@ int testRecvHandler(int fd)
 	// 	std::cout << "INFO: received from " << fd
 	// 				<< ": " << nBytes << " bytes. \n";
 
-	std::ifstream file("./www/html/index.html");
-	std::ostringstream content;
+	// std::ifstream file("./www/html/index.html");
+	// std::ostringstream content;
 
-	content << file.rdbuf();
+	// content << file.rdbuf();
 
-	std::string body = content.str();
-	std::ostringstream response;
-	response << "HTTP/1.1 200 OK\r\n"
-			 << "Content-Type: text/html\r\n"
-			 << "Content-Length: " << body.length() << "\r\n"
-			 << "\r\n"
-			 << body;
+	// std::string body = content.str();
+	// std::ostringstream response;
+	// response << "HTTP/1.1 200 OK\r\n"
+	// 		 << "Content-Type: text/html\r\n"
+	// 		 << "Content-Length: " << body.length() << "\r\n"
+	// 		 << "\r\n"
+	// 		 << body;
 
-	std::string arr = response.str();
-	int send_res = send(fd, arr.c_str(), arr.length(), 0);
-	if (send_res == -1)
-		std::cerr << "ERROR: sending response: " << strerror(errno) << '\n';
-	else
-		std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
+	// std::string arr = response.str();
+	// int send_res = send(fd, arr.c_str(), arr.length(), 0);
+	// if (send_res == -1)
+	// 	std::cerr << "ERROR: sending response: " << strerror(errno) << '\n';
+	// else
+	// 	std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
 
-	return (0);
 
 	return (0);
 }
