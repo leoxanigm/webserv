@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/18 17:08:37 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/03/23 13:27:37 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,7 +57,7 @@ typedef struct	s_servers
 	std::list<t_locations>	locations;
 	t_HTTPStatusCodesPages	error_pages;
 	bool					is_default_server = false;
-	unsigned int			listen_port	= 8080;
+	char					*listen_port	= "8080";
 	std::string				server_name	= "webserv";
 }	t_servers;
 

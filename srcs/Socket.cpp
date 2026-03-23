@@ -169,7 +169,7 @@ void Socket::_handleNewConnection(int listener)
 // For testing, this should call a parser
 void Socket::_handleClient(std::size_t index)
 {
-	char buffer[256];
+	char buffer[8192];
 	int senderFd = _pollFds[index].fd;
 
 	errno = 0;
@@ -198,6 +198,16 @@ void Socket::_handleClient(std::size_t index)
 		/*
 		Example for testing :
 		GET / HTTP/1.1\r\nHost: localhost:9999\r\n
+
+
+		Example for testing with POST
+		POST / HTTP/1.1\r\n                                                                                                    ─╯
+		Host: localhost\r\n
+		Authorization: Basic myname:passwordinbs64\r\n
+		Content-type: application/x-www-form-urlencoded\r\n
+		Content-length: 10\r\n
+		Connection: Close\r\n\r\n
+		status=mymessage"
 		*/
 		if (!request.isValid())
 			std::cerr << "WARN: failed to parse HTTP request from socket "
@@ -205,6 +215,23 @@ void Socket::_handleClient(std::size_t index)
 		else
 			std::cout << "INFO: received from " << senderFd
 					<< ": " << nBytes << " bytes. \n";
+		
+		std::cout << rawRequest << std::endl << std::endl;
+		
+		std::cout << request.getMethod() << std::endl;
+		std::cout << request.getRequestTarget() << std::endl;
+		std::cout << request.getHTTPVersion() << std::endl << std::endl;
+
+		std::cout << "Body -> " << request.getBody() << std::endl;
+
+		std::map<std::string, std::string> ct = request.getContentType();
+		std::map<std::string, std::string>::const_iterator it;
+		for (it = ct.begin(); it != ct.end(); ++it)
+		{
+			std::cout << "Key: " << it->first << ", Value: " << it->second << '\n';
+		}
+
+		return ;
 
 		/*
 		* TESTS

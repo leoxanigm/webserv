@@ -85,14 +85,24 @@ const std::string	&HTTPRequest::getHTTPVersion() const
 	return (_httpVersion);
 }
 
+const std::string	&HTTPRequest::getHost() const
+{
+	return (_host);
+}
+
 void	HTTPRequest::setHost(const std::string &host)
 {
 	_host = host;
 }
 
-const std::string	&HTTPRequest::getHost() const
+const unsigned int	&HTTPRequest::getContentLength() const
 {
-	return (_host);
+	return (_contentLength);
+}
+
+void	HTTPRequest::setContentLength(const unsigned int &length)
+{
+	_contentLength = length;
 }
 
 void	HTTPRequest::setUserAgent(const std::string &agent)
@@ -105,6 +115,16 @@ const std::string	&HTTPRequest::getUserAgent() const
 	return (_userAgent);
 }
 
+void	HTTPRequest::setBody(const std::string &body)
+{
+	_body = body;
+}
+
+const std::string	&HTTPRequest::getBody() const
+{
+	return (_userAgent);
+}
+
 void	HTTPRequest::setLanguages(const std::map<std::string, float> &languages)
 {
 	_languages = languages;
@@ -113,6 +133,16 @@ void	HTTPRequest::setLanguages(const std::map<std::string, float> &languages)
 const std::map<std::string, float>	&HTTPRequest::getLanguages() const
 {
 	return (_languages);
+}
+
+void	HTTPRequest::setContentType(const std::map<std::string, std::string> &contentType)
+{
+	_contentType = contentType;
+}
+
+const std::map<std::string, std::string>	&HTTPRequest::getContentType() const
+{
+	return (_contentType);
 }
 
 void	HTTPRequest::setAccept(const std::map<std::string, std::string> &accept)
@@ -253,6 +283,20 @@ void	HTTPRequest::parseAcceptHeader(const std::string &value)
 	}
 }
 
+void	HTTPRequest::parseContentType(const std::string &value)
+{
+	std::string::size_type sep = value.find('/');
+	std::string type = trim(value.substr(0, sep));
+	std::string val = trim(value.substr(sep + 1));
+
+	_contentType[type] = val;
+}
+
+void	HTTPRequest::parseContentLength(const std::string &value)
+{
+	_contentLength = std::atoi(value.c_str());
+}
+
 bool	HTTPRequest::parseHeaderLine(const std::string &line)
 {
 	std::string::size_type sep = line.find(':');
@@ -272,6 +316,7 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 
 	std::string keyLower = key;
 	std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), ::tolower);
+
 	if (keyLower == "host")
 		_host = value;
 	else if (keyLower == "user-agent")
@@ -280,6 +325,10 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 		parseAcceptLanguage(value);
 	else if (keyLower == "accept")
 		parseAcceptHeader(value);
+	else if (keyLower == "content-type")
+		parseContentType(value);
+	else if (keyLower == "content-length")
+		parseContentLength(value);
 
 	return (true);
 }
@@ -313,7 +362,7 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 		}
 
 		if (line.empty())
-			break ;
+			continue ;
 
 		if (!parseHeaderLine(line))
 		{
@@ -321,4 +370,8 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 			return ;
 		}
 	}
+	std::cout << "find" << std::endl;
+	std::string::size_type body_begin = raw.find("\r\n\r\n");
+	if (body_begin != std::string::npos)
+		_body = raw.substr(body_begin + 4);
 }
