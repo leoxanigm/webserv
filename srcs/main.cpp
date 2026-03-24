@@ -100,6 +100,38 @@ int testRecvHandler(int fd)
 // 	return (0);
 // }
 
+// typedef struct s_locations
+// {
+// 	std::string location = "/";
+// 	bool autoindex = false;
+// 	unsigned int return_code = 200;
+// 	std::string root = "./";
+// 	std::string index = "index.html";
+// 	// Did I miss some ?
+// } t_locations;
+
+// typedef struct s_servers
+// {
+// 	std::list<t_locations> locations;
+// 	// t_HTTPStatusCodesPages	error_pages;
+// 	bool is_default_server = false;
+// 	char *interface = "localhost";
+// 	char *listen_port = "8080";
+// 	std::string server_name = "webserv";
+// } t_servers;
+
+// class ConfigFileParsing
+// {
+// private:
+// 	std::list<t_servers> _servers;
+
+// public:
+// 	ConfigFileParsing(/* args */);
+// 	~ConfigFileParsing();
+
+// 	const std::list<t_servers> &servers() const;
+// };
+
 int main(int argc, char const *argv[])
 {
 	(void)argc;
@@ -107,9 +139,8 @@ int main(int argc, char const *argv[])
 
 	try
 	{
-		Connection connection;
-		connection.attachEvent(POLLIN, testRecvHandler);
-		// connection.attachEvent(POLLOUT, testSendHandler);
+		ConfigFileParsing config;
+		Connection connection(config);
 		connection.openConnection();
 	}
 	catch (const std::exception &e)

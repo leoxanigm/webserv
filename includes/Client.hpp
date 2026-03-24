@@ -7,16 +7,32 @@ class Client
 {
 public:
 	Client(int connFd); // Change to Client(int connFd, const Config &config);
+	Client(const Client &obj);
 	~Client();
+
+	enum State
+	{
+		READ_REQUEST,
+		SEND_RESPONSE,
+		READ_PIPE,
+		SEND_PIPE,
+		CLOSE_PIPE,
+		CLOSE_CONNECTION
+	};
 
 	int handleRead(int fd);
 	int handleWrite(int fd);
 
+	int connFd() const;
 	int getPipeFd(void) const; // Maybe we need _getPipeWriteFd and _getPipeReadFd?
+
+	State getState() const;
+
+	// We want to add Client objects to a set 
+	bool operator<(const Client &rhs) const;
 
 private:
 	Client();
-	Client(const Client &obj);
 	Client &operator=(const Client &obj);
 
 	const int _connFd;
@@ -24,14 +40,7 @@ private:
 	std::string _inBuffer;
 	std::string _outBuffer;
 
-	enum State
-	{
-		READ_REQUEST,
-		SEND_REQUEST,
-		READ_PIPE,
-		SEND_PIPE,
-		CLOSE_PIPE
-	} _state;
+	State _state;
 };
 
 #endif /* CLIENT_HPP */
