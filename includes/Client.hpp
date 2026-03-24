@@ -7,7 +7,6 @@ class Client
 {
 public:
 	Client(int connFd); // Change to Client(int connFd, const Config &config);
-	Client(const Client &obj);
 	~Client();
 
 	enum State
@@ -23,8 +22,12 @@ public:
 	int handleRead(int fd);
 	int handleWrite(int fd);
 
-	int connFd() const;
-	int getPipeFd(void) const; // Maybe we need _getPipeWriteFd and _getPipeReadFd?
+	int getConnFd() const;
+	int getPipeReadFd(void) const;
+	int getPipeWriteFd(void) const;
+	void closeConnFd();
+	void closePipeReadFd();
+	void closePipeWriteFd();
 
 	State getState() const;
 
@@ -33,10 +36,12 @@ public:
 
 private:
 	Client();
+	Client(const Client &obj);
 	Client &operator=(const Client &obj);
 
-	const int _connFd;
-	int _pipeFd; // Maybe we need _pipeWriteFd and _pipeReadFd?
+	int _connFd;
+	int _pipeReadFd;
+	int _pipeWriteFd;
 	std::string _inBuffer;
 	std::string _outBuffer;
 

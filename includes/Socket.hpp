@@ -7,23 +7,13 @@
 class Socket
 {
 public:
-	Socket(const char *host, const char *service);
-	Socket(const Socket &obj);
-	~Socket();
-
-	int fd(void) const;
-	const char *host() const;
-	const char *service() const;
+	static int newSocket(const char *host, const char *service);
 
 private:
 	Socket();
+	Socket(const Socket &obj);
 	Socket &operator=(const Socket &obj);
-
-	const char *_host;
-	const char *_service;
-	int _listener; // listener file descriptor
-
-	void _initListenerSocket(void);
+	~Socket();
 };
 
 #endif /* SOCKET_HPP */

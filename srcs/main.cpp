@@ -1,147 +1,38 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-
-#include <csignal> // Move to Connections/ServerEvents
-
+#include <csignal>
 #include <poll.h>
 #include <sys/socket.h>
 #include <cstring>
 
 #include "../includes/Connection.hpp"
 
-int testRecvHandler(int fd)
+volatile sig_atomic_t pollStop = 0;
+
+void sigIntHandler(int sig)
 {
-	char buffer[256];
-
-	errno = 0;
-	int nBytes = recv(fd, buffer, sizeof(buffer) - 1, 0);
-
-	if (nBytes <= 0)
-	{
-		if (nBytes == 0) // connection closed
-			std::cout << "INFO: socket " << fd << " hang up\n";
-		else
-			std::cerr << "ERROR: receiving data: " << std::strerror(errno) << '\n';
-
-		return (-1);
-	}
-
-	buffer[nBytes] = '\0';
-
-	std::cout << buffer << '\n';
-
-	// std::string rawRequest(buffer, nBytes);
-	// HTTPRequest request(rawRequest);
-
-	// /*
-	// Example for testing :
-	// GET / HTTP/1.1\r\nHost: localhost:9999\r\n
-	// */
-	// if (!request.isValid())
-	// 	std::cerr << "WARN: failed to parse HTTP request from socket "
-	// 				<< fd << ": " << request.getError() << '\n';
-	// else
-	// 	std::cout << "INFO: received from " << fd
-	// 				<< ": " << nBytes << " bytes. \n";
-
-	// std::ifstream file("./www/html/index.html");
-	// std::ostringstream content;
-
-	// content << file.rdbuf();
-
-	// std::string body = content.str();
-	// std::ostringstream response;
-	// response << "HTTP/1.1 200 OK\r\n"
-	// 		 << "Content-Type: text/html\r\n"
-	// 		 << "Content-Length: " << body.length() << "\r\n"
-	// 		 << "\r\n"
-	// 		 << body;
-
-	// std::string arr = response.str();
-	// int send_res = send(fd, arr.c_str(), arr.length(), 0);
-	// if (send_res == -1)
-	// 	std::cerr << "ERROR: sending response: " << strerror(errno) << '\n';
-	// else
-	// 	std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
-
-
-	return (0);
+	(void) sig;
+	pollStop = 1;
 }
-
-// int testSendHandler(int fd)
-// {
-// 	/*
-// 	* TESTS
-
-// 	Here we have an `index.html` file to test a static webpage
-// 	without taking in account the header yet
-// 	*/
-// 	std::ifstream file("./www/html/index.html");
-// 	std::ostringstream content;
-
-// 	content << file.rdbuf();
-
-// 	std::string body = content.str();
-// 	std::ostringstream response;
-// 	response << "HTTP/1.1 200 OK\r\n"
-// 			 << "Content-Type: text/html\r\n"
-// 			 << "Content-Length: " << body.length() << "\r\n"
-// 			 << "\r\n"
-// 			 << body;
-
-// 	std::string arr = response.str();
-// 	int send_res = send(fd, arr.c_str(), arr.length(), 0);
-// 	if (send_res == -1)
-// 		std::cerr << "ERROR: sending response: " << strerror(errno) << '\n';
-// 	else
-// 		std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
-
-// 	return (0);
-// }
-
-// typedef struct s_locations
-// {
-// 	std::string location = "/";
-// 	bool autoindex = false;
-// 	unsigned int return_code = 200;
-// 	std::string root = "./";
-// 	std::string index = "index.html";
-// 	// Did I miss some ?
-// } t_locations;
-
-// typedef struct s_servers
-// {
-// 	std::list<t_locations> locations;
-// 	// t_HTTPStatusCodesPages	error_pages;
-// 	bool is_default_server = false;
-// 	char *interface = "localhost";
-// 	char *listen_port = "8080";
-// 	std::string server_name = "webserv";
-// } t_servers;
-
-// class ConfigFileParsing
-// {
-// private:
-// 	std::list<t_servers> _servers;
-
-// public:
-// 	ConfigFileParsing(/* args */);
-// 	~ConfigFileParsing();
-
-// 	const std::list<t_servers> &servers() const;
-// };
 
 int main(int argc, char const *argv[])
 {
 	(void)argc;
 	(void)argv;
 
+	signal(SIGINT, sigIntHandler);
+
 	try
 	{
+		// if (argc == 2)
+		// 	ConfigFileParsing config(argv[1]);
+		// else
+		// 	ConfigFileParsing config;
+
 		ConfigFileParsing config;
 		Connection connection(config);
-		connection.openConnection();
+		connection.start();
 	}
 	catch (const std::exception &e)
 	{

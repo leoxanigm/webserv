@@ -8,23 +8,21 @@
 #include "../includes/HTTPError.hpp"
 
 Client::Client(int connFd)
-	: _connFd(connFd), _pipeFd(-1)
+	: _connFd(connFd), _pipeReadFd(-1), _pipeWriteFd(-1)
 {
 	_inBuffer = "";
 	_outBuffer = "";
-}
-
-Client::Client(const Client &obj) : _connFd(obj._connFd)
-{
-	_pipeFd = obj._pipeFd;
-	_inBuffer = obj._inBuffer;
-	_outBuffer = obj._outBuffer;
-	_state = obj._state;
+	_state = READ_REQUEST;
 }
 
 Client::~Client()
 {
-	close(_pipeFd);
+	if (_connFd > -1)
+		close(_connFd);
+	if (_pipeReadFd > -1)
+		close(_pipeReadFd);
+	if (_pipeWriteFd > -1)
+		close(_pipeWriteFd);
 }
 
 bool Client::operator<(const Client &rhs) const
@@ -100,18 +98,40 @@ int Client::handleWrite(int fd)
 	return (send_res);
 }
 
-int Client::connFd() const
+int Client::getConnFd() const
 {
 	return (_connFd);
 }
 
-/**
- * If a client object uses CGI, we have to poll read/write to pipe,
- * so we can request the object for the pipe read/write fd
- */
-int Client::getPipeFd(void) const
+int Client::getPipeReadFd(void) const
 {
-	return (_pipeFd);
+	return (_pipeReadFd);
+}
+
+int Client::getPipeWriteFd(void) const
+{
+	return (_pipeWriteFd);
+}
+
+void Client::closeConnFd()
+{
+	if (_connFd > -1)
+		close(_connFd);
+	_connFd = -1;
+}
+
+void Client::closePipeReadFd()
+{
+	if (_pipeReadFd > -1)
+		close(_pipeReadFd);
+	_pipeReadFd = -1;
+}
+
+void Client::closePipeWriteFd()
+{
+	if (_pipeWriteFd > -1)
+		close(_pipeWriteFd);
+	_pipeWriteFd = -1;
 }
 
 Client::State Client::getState() const

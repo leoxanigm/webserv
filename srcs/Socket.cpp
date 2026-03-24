@@ -11,37 +11,12 @@
 #include "../includes/utils.hpp"
 #include "../includes/Socket.hpp"
 
-Socket::Socket(const char *host, const char *service) : _host(host), _service(service)
+int Socket::newSocket(const char *host, const char *service)
 {
-	// Initialize listener on start,
-	_initListenerSocket(); // _listener
-}
+	if (!host || !service)
+		return (-1);
 
-Socket::Socket(const Socket &obj) : _host(obj._host), _service(obj._service)
-{
-	_listener = obj._listener;
-}
-
-Socket::~Socket() {}
-
-int Socket::fd(void) const
-{
-	return (_listener);
-}
-
-const char *Socket::host() const
-{
-	return (_host);
-}
-
-const char *Socket::service() const
-{
-	return (_service);
-}
-
-void Socket::_initListenerSocket(void)
-{
-	int listener, retVal, optVal = 1;
+	int socketFd, retVal, optVal = 1;
 
 	struct addrinfo addrInfoHints, *addrInfo, *addrInfoIt;
 
@@ -50,57 +25,60 @@ void Socket::_initListenerSocket(void)
 	addrInfoHints.ai_socktype = SOCK_STREAM;
 	addrInfoHints.ai_flags = AI_PASSIVE; // get ip for me
 
-	if ((retVal = getaddrinfo(_host, _service, &addrInfoHints, &addrInfo)) != 0)
+	if ((retVal = getaddrinfo(host, service, &addrInfoHints, &addrInfo)) != 0)
 		throw std::runtime_error("Error: " + std::string(gai_strerror(retVal)));
 
 	for (addrInfoIt = addrInfo; addrInfoIt != 0; addrInfoIt = addrInfoIt->ai_next)
 	{
-		listener = socket(
+		socketFd = socket(
 			addrInfoIt->ai_family,
 			addrInfoIt->ai_socktype,
 			addrInfoIt->ai_protocol);
 
-		if (listener < 0)
+		if (socketFd < 0)
 		{
-			close(listener);
+			close(socketFd);
 			continue;
 		}
 
-		if (utils::setNonBlocking(listener) == -1)
+		if (utils::setNonBlocking(socketFd) == -1)
 		{
-			close(listener);
+			close(socketFd);
 			continue;
 		}
 
 		// Allow bind without wait
 		// https://stackoverflow.com/a/3229926
-		if (setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal)) != 0)
-			continue;
-
-		if (bind(listener, addrInfoIt->ai_addr, addrInfoIt->ai_addrlen) != 0)
+		if (setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal)) != 0)
 		{
-			close(listener);
+			close(socketFd);
+			continue;
+		}
+
+		if (bind(socketFd, addrInfoIt->ai_addr, addrInfoIt->ai_addrlen) != 0)
+		{
+			close(socketFd);
 			continue;
 		}
 
 		break; // We were able to bind
 	}
 
-	if (addrInfoIt == 0)
-	{
-		close(listener);
-		throw std::runtime_error(
-			"Error: unable to bind socket on port " + std::string(_service));
-	}
-
 	freeaddrinfo(addrInfo);
 
-	if (listen(listener, SOMAXCONN) != 0)
+	if (addrInfoIt == 0)
 	{
-		close(listener);
+		close(socketFd);
 		throw std::runtime_error(
-			"Error: unable to listen socket on port " + std::string(_service));
+			"Error: unable to bind socket on port "  + std::string(service));
 	}
 
-	_listener = listener;
+	if (listen(socketFd, SOMAXCONN) != 0)
+	{
+		close(socketFd);
+		throw std::runtime_error(
+			"Error: unable to listen socket on port " + std::string(service));
+	}
+
+	return (socketFd);
 }

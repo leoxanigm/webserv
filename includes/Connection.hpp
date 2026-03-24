@@ -66,42 +66,55 @@ public:
 	Connection(const ConfigFileParsing &config); // Init with config
 	~Connection();
 
-	void openConnection(void);
-	void closeConnection();
+	void start();
 
 private:
 	Connection();
 	Connection(const Connection &obj);
 	Connection &operator=(const Connection &obj);
 
+	enum FdType
+	{
+		FD_CLIENT_CONN,
+		FD_PIPE_READ,
+		FD_PIPE_WRITE
+	};
+
+	struct FdEntry
+	{
+		FdType type;
+		Client *client;
+	};
+
 	typedef const std::list<t_locations> locations_list_t;
 
 	const ConfigFileParsing &_config;
-	bool _sigint;
 
 	// Associative map for socket fd and corresponding config
-	std::map<int, locations_list_t &> _sockets;
+	std::map<int, locations_list_t *> _sockets;
 
 	std::vector<struct pollfd> _pollFds;
 
 	// List of connected clients
-	std::list<Client> _clients;
+	std::list<Client *> _clients;
 
 	// Track fds for clients (connection and pipe)
-	std::map<int, Client *> _clientFds;
+	std::map<int, FdEntry> _clientFds;
 
 	void _initSockets();
-	void _initPollFds();
 	void _runPoll();
 	void _setFdPollEvent(int fd, short event);
+
+	void _addPollFd(int fd, short event);
+	void _addClient(int fd);
+	Client *_findClient(int fd) const;
+	void _closeClientFd(Client *client, FdType type);
+	void _removeClient(int fd);
+	void _removePollFd(std::size_t index);
+
 	void _processConnections();
 	void _handleNewConnection(int socketFd);
 	int _handleClient(int fd, short event);
-
-	void _addPollFd(int fd, short event);
-	void _removePollFd(std::size_t index);
-	void _addClient(int fd);
-	void _removeClient(int fd);
 };
 
 #endif /* CONNECTION_HPP */
