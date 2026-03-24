@@ -25,13 +25,23 @@ Client::~Client()
 		close(_pipeWriteFd);
 }
 
-bool Client::operator<(const Client &rhs) const
-{
-	return (_connFd < rhs._connFd);
-}
-
 int Client::handleRead(int fd)
 {
+	// TODO:
+	// loop on recv()
+	// stop on EAGAIN / EWOULDBLOCK
+	// if recv() returns 0, client sent all data and closed
+	// Talk with Mathys on how to implement requestComplete for
+	//	* normal body
+	//  * form body
+	//  * chunked request
+	//  * file upload
+	// How do we handle timeout and content length more than accepted value?
+	// Also what if body size doesn't match content length value?
+	// Two CGIs we can use:
+	//	* python cgi module (python3.10) (https://docs.python.org/3.10/library/cgi.html)
+	//	* php-cgi (https://php-dictionary.readthedocs.io/en/latest/dictionary/cgi.ini.html)
+
 	char buff[4096];
 	ssize_t n = recv(fd, buff, sizeof(buff), 0);
 
@@ -69,6 +79,8 @@ int Client::handleWrite(int fd)
 	// TODO:
 	// For CGI, set state to READ_PIPE, then check on finish read pipe
 	// and set state to SEND_RESPONSE
+	// Check send_res length and remove it from begining of _outBuffer
+	// when _outBuffer is empty, close all pipe fds and set _state = CLOSE_CONNECTION
 
 	std::ifstream file("./www/html/index.html");
 	std::ostringstream content;

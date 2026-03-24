@@ -31,9 +31,6 @@ public:
 
 	State getState() const;
 
-	// We want to add Client objects to a set 
-	bool operator<(const Client &rhs) const;
-
 private:
 	Client();
 	Client(const Client &obj);
