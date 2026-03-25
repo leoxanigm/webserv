@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parsing_utils.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/17 22:13:32 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/17 22:58:25 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/03/25 12:36:41 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,4 +66,35 @@ float	parseQualityFloat(const std::string &params, bool &ok)
 	float q = std::strtof(qValue.c_str(), &end);
 	ok = (end != qValue.c_str() && *end == '\0');
 	return (ok ? q : 1.0f);
+}
+
+std::vector<std::string> extractBraces(const std::string& input)
+{
+    std::vector<std::string> results;
+    int brace_count = 0;
+    size_t start_pos = 0;
+    bool in_brace = false;
+
+    for (size_t i = 0; i < input.length(); ++i)
+	{
+        if (input[i] == '{')
+		{
+            if (brace_count == 0)
+			{
+                start_pos = i + 1;
+                in_brace = true;
+            }
+            brace_count++;
+        }
+		else if (input[i] == '}')
+		{
+            brace_count--;
+            if (brace_count == 0 && in_brace)
+			{
+                results.push_back(input.substr(start_pos, i - start_pos));
+                in_brace = false;
+            }
+        }
+    }
+    return (results);
 }

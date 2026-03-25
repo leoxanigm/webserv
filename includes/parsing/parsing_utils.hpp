@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parsing_utils.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/17 23:15:00 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/17 22:58:25 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/03/25 12:36:59 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,10 +16,11 @@
 # include <string>
 # include <vector>
 
-std::string	trim(const std::string &value);
-std::string	toLower(const std::string &value);
-void		splitByComma(const std::string &value, std::vector<std::string> &out);
-bool		parseQualityParam(const std::string &params, std::string &outQ);
-float		parseQualityFloat(const std::string &params, bool &ok);
+std::string					trim(const std::string &value);
+std::string					toLower(const std::string &value);
+void						splitByComma(const std::string &value, std::vector<std::string> &out);
+bool						parseQualityParam(const std::string &params, std::string &outQ);
+float						parseQualityFloat(const std::string &params, bool &ok);
+std::vector<std::string>	extractBraces(const std::string& input);
 
 #endif
