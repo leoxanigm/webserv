@@ -1,17 +1,22 @@
-#include <unistd.h>
-#include <sys/socket.h>
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <cstring>
+#include <errno.h>
 
 #include "../includes/Client.hpp"
 #include "../includes/HTTPError.hpp"
+#include "../includes/parsing/HTTPRequestParser.hpp"
 
 Client::Client(int connFd, const ConfigFileParsing::location_list_t &locations)
-	: _locations(locations), _connFd(connFd), _pipeReadFd(-1), _pipeWriteFd(-1)
+	: _locations(locations), _connFd(connFd)
 {
 	_inBuffer = "";
 	_outBuffer = "";
+	_pipeReadFd = -1;
+	_pipeWriteFd = -1;
 	_state = READ_REQUEST;
 }
 
@@ -43,32 +48,47 @@ int Client::handleRead(int fd)
 	//	* php-cgi (https://php-dictionary.readthedocs.io/en/latest/dictionary/cgi.ini.html)
 
 	char buff[4096];
-	ssize_t n = recv(fd, buff, sizeof(buff), 0);
+	ssize_t n = 0;
 
-	if (n > 0)
+	errno = 0;
+	while ((n = recv(fd, buff, sizeof(buff), 0)) > 0)
 	{
-
 		_inBuffer.append(buff, n);
 
-		_state = SEND_RESPONSE;
+		// buff[n] = '\0';
 
-		// 	if (HTTPRequestParser::requestComplete(_inBuffer))
-		// 	{
-		//		_state = SEND_RESPONSE;
+		// std::cout << "INFO: received buffer:\n" << buff << '\n';
 
-		// 		HTTPRequestParser req(_inBuffer);
+		std::memset(buff, 0, 4096);
 
-		// 		if (_useCGI)
-		// 		{
-		// 			// Handle CGI
-		// 			// set pipeFd
-		// 			// _state = SEND_PIPE;
-		// 		}
-		// 		else
-		// 		{
-		// 			// Handle static files
-		// 		}
-		// 	}
+		_req = HTTPRequest(_inBuffer);
+
+		if (_req.isValid()) // Received the whole request buffer
+		{
+			_state = SEND_RESPONSE;
+
+			std::cout << "INFO: received " << n << " bytes from " << fd << '\n';
+
+			// if (_useCGI(req.getLocation()))
+			// {
+			// 	// Handle CGI
+			// 	// set pipeFd
+			// 	// _state = SEND_PIPE;
+			// }
+			// else
+			// {
+			// 	// Handle static files
+			// }
+		}
+		else
+			std::cout << _inBuffer << '\n';
+	}
+
+	if ((n < 0 && (errno != EAGAIN && errno != EWOULDBLOCK)) || n == 0) // Connection closed
+	{
+		closePipeReadFd();
+		closePipeWriteFd();
+		_state = CLOSE_CONNECTION;
 	}
 
 	return (n);
@@ -82,30 +102,35 @@ int Client::handleWrite(int fd)
 	// Check send_res length and remove it from begining of _outBuffer
 	// when _outBuffer is empty, close all pipe fds and set _state = CLOSE_CONNECTION
 
-	std::ifstream file("./www/html/index.html");
-	std::ostringstream content;
+	int send_res = 0;
 
-	content << file.rdbuf();
+	if (_req.isValid())
+	{
+		std::ifstream file("./www/html/index.html");
+		std::ostringstream content;
 
-	std::string body = content.str();
-	std::ostringstream response;
-	response << "HTTP/1.1 200 OK\r\n"
-			 << "Content-Type: text/html\r\n"
-			 << "Content-Length: " << body.length() << "\r\n"
-			 << "\r\n"
-			 << body;
+		content << file.rdbuf();
 
-	std::string arr = response.str();
-	int send_res = send(fd, arr.c_str(), arr.length(), 0);
-	if (send_res == -1)
-		std::cerr << "ERROR: sending response: " << '\n';
-	else
-		std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
+		std::string body = content.str();
+		std::ostringstream response;
+		response << "HTTP/1.1 200 OK\r\n"
+				 << "Content-Type: text/html\r\n"
+				 << "Content-Length: " << body.length() << "\r\n"
+				 << "\r\n"
+				 << body;
 
-	_inBuffer.clear();
+		std::string arr = response.str();
+		send_res = send(fd, arr.c_str(), arr.length(), 0);
+		if (send_res == -1)
+			std::cerr << "ERROR: sending response: " << '\n';
+		else
+			std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
 
-	// close(_pipeFd);
-	_state = CLOSE_CONNECTION;
+		_inBuffer.clear();
+
+		// close(_pipeFd);
+		_state = CLOSE_CONNECTION;
+	}
 
 	return (send_res);
 }

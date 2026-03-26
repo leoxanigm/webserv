@@ -118,7 +118,7 @@ void Connection::_addPollFd(int fd, short event)
 void Connection::_addClient(int fd, const ConfigFileParsing::location_list_t *locations)
 {
 	Client *client = new Client(fd, *locations);
-	_clients.push_back(client); // Client should be initialised with t_locations
+	_clients.push_back(client);
 
 	FdEntry entry;
 	entry.type = FD_CLIENT_CONN;
@@ -225,7 +225,7 @@ void Connection::_processConnections()
 		if (removeClient)
 		{
 			_removePollFd(i);
-			continue;
+			continue; // Don't skip the current index on removal
 		}
 
 		i++;
@@ -251,7 +251,6 @@ void Connection::_handleNewConnection(int socketFd)
 
 	_addPollFd(clientFd, POLLIN | POLLOUT);
 	_addClient(clientFd, _sockets[socketFd]);
-	// _addClient(clientFd);
 
 	std::cout << "INFO: new connection on socket " << socketFd << '\n';
 	// Maybe print more info using remoteIP char array?

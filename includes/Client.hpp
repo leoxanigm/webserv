@@ -4,11 +4,12 @@
 #include <string>
 
 #include "./parsing/ConfigFileParsing.hpp"
+#include "./parsing/HTTPRequestParser.hpp"
 
 class Client
 {
 public:
-	Client(int connFd, const ConfigFileParsing::location_list_t &locations); // Change to Client(int connFd, const Config &config);
+	Client(int connFd, const ConfigFileParsing::location_list_t &locations);
 	~Client();
 
 	enum State
@@ -39,6 +40,7 @@ private:
 	Client &operator=(const Client &obj);
 
 	const ConfigFileParsing::location_list_t &_locations;
+	HTTPRequest _req;
 
 	int _connFd;
 	int _pipeReadFd;

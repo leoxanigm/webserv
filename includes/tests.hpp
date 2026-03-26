@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/25 13:37:15 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/26 12:03:13 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/03/26 12:46:27 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,5 +20,6 @@
 #include "../includes/UI.hpp"
 
 void	display_parsed_conf_file(const ConfigFileParsing &config);
+void	testHttpParsing(void);
 
 #endif
