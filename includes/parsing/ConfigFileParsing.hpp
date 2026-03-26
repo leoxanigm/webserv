@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/26 09:54:59 by zalemu           ###   ########.fr       */
+/*   Updated: 2026/03/26 12:41:02 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,10 +56,20 @@ typedef struct s_HTTPStatusCodePages
 		ServiceUnavailable("./confs/status_pages/503.html") {}
 }	t_HTTPStatusCodesPages;
 
+typedef enum	e_CGIs
+{
+	PYTHON,
+	PHP,
+	NONE
+}	t_CGIs;
+
 typedef struct	s_locations
 {
 	std::string		location;
 	bool			autoindex;
+	bool			is_cgi;
+	t_CGIs			cgi_type;
+	std::string		cgi_location;
 	unsigned int	return_code;
 	std::string		root;
 	std::string		index;
@@ -67,6 +77,9 @@ typedef struct	s_locations
 
 	s_locations() : 
 		location("/"),
+		is_cgi(false),
+		cgi_type(NONE),
+		cgi_location(NULL),
 		autoindex(false),
 		return_code(200),
 		root("./"),

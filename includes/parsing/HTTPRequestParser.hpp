@@ -38,7 +38,6 @@ class HTTPRequest
 		std::string							_requestTarget;
 		std::string							_httpVersion;
 		std::string							_host;
-		std::string							_transfert_encoding;
 		std::string							_userAgent;
 		std::map<std::string, float>		_languages;
 		std::map<std::string, std::string>	_accept;
@@ -46,6 +45,7 @@ class HTTPRequest
 		std::string							_error;
 
 		// POST request specific datas
+		std::string							_transfert_encoding;
 		unsigned int						_contentLength;	// We are not managing Transfer-Encoding
 		std::map<std::string, std::string>	_contentType;
 		std::string							_body;
