@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
+/*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/25 13:32:14 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/03/26 09:44:07 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -204,7 +204,7 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf)
     }
 }
 
-std::list<t_servers>	ConfigFileParsing::getServers(void)
+const std::list<t_servers>	&ConfigFileParsing::getServers(void) const
 {
 	return (_servers);
 }

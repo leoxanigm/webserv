@@ -9,53 +9,7 @@
 
 #include "Socket.hpp"
 #include "Client.hpp"
-
-// TEMP. REMOVE
-
-typedef struct s_locations
-{
-	// std::string location = "/";
-	// bool autoindex = false;
-	// unsigned int return_code = 200;
-	// std::string root = "./";
-	// std::string index = "index.html";
-	// // Did I miss some ?
-} t_locations;
-
-typedef struct s_servers
-{
-	std::list<t_locations> locations;
-	// t_HTTPStatusCodesPages	error_pages;
-	// bool is_default_server = false;
-	// std::string interface = "localhost";
-	std::string interface;
-	// std::string listen_port = "8080";
-	std::string listen_port;
-	// std::string server_name = "webserv";
-} t_servers;
-
-class ConfigFileParsing
-{
-private:
-	std::list<t_servers> _servers;
-
-public:
-	ConfigFileParsing()
-	{
-		t_servers server;
-		server.interface = "localhost";
-		server.listen_port = "8080";
-		_servers.push_back(server);
-	}
-	~ConfigFileParsing() {}
-
-	const std::list<t_servers> &servers() const
-	{
-		return _servers;
-	}
-};
-
-// TEMP. REMOVE
+#include "./parsing/ConfigFileParsing.hpp"
 
 /**
  * A class that handles one socket connection and its related events
@@ -86,12 +40,10 @@ private:
 		Client *client;
 	};
 
-	typedef const std::list<t_locations> locations_list_t;
-
 	const ConfigFileParsing &_config;
 
 	// Associative map for socket fd and corresponding config
-	std::map<int, locations_list_t *> _sockets;
+	std::map<int, const ConfigFileParsing::location_list_t *> _sockets;
 
 	std::vector<struct pollfd> _pollFds;
 
@@ -106,7 +58,7 @@ private:
 	void _setFdPollEvent(int fd, short event);
 
 	void _addPollFd(int fd, short event);
-	void _addClient(int fd);
+	void _addClient(int fd, const ConfigFileParsing::location_list_t *locations);
 	Client *_findClient(int fd) const;
 	void _closeClientFd(Client *client, FdType type);
 	void _removeClient(int fd);

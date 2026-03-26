@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
+/*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/25 13:32:14 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/03/26 09:54:59 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,12 +92,18 @@ typedef struct	s_servers
 class ConfigFileParsing
 {
 	private:
+		ConfigFileParsing();
+		ConfigFileParsing(const ConfigFileParsing &obj);
+		ConfigFileParsing &operator=(const ConfigFileParsing &obj);
+		
 		std::list<t_servers>	_servers;
 
 	public:
 		ConfigFileParsing(std::string raw_conf);
-		std::list<t_servers>	getServers(void);
 		~ConfigFileParsing();
+
+		const std::list<t_servers> &getServers(void) const;
+		typedef std::list<t_locations> location_list_t;
 };
 
 #endif

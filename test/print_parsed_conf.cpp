@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   print_parsed_conf.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
+/*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/25 13:36:19 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/25 13:38:54 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/03/26 09:57:45 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/tests.hpp"
 
-void display_parsed_conf_file(ConfigFileParsing config)
+void display_parsed_conf_file(const ConfigFileParsing &config)
 {
 	std::list<t_servers>	srvs = config.getServers();
 	std::list<t_servers>::iterator it;

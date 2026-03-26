@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   tests.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
+/*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/25 13:37:15 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/25 13:39:32 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/03/26 09:58:12 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,6 @@
 #include "../includes/parsing/ConfigFileParsing.hpp"
 #include "../includes/UI.hpp"
 
-void	display_parsed_conf_file(ConfigFileParsing config);
+void	display_parsed_conf_file(const ConfigFileParsing &config);
 
 #endif

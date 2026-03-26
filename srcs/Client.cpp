@@ -7,8 +7,8 @@
 #include "../includes/Client.hpp"
 #include "../includes/HTTPError.hpp"
 
-Client::Client(int connFd)
-	: _connFd(connFd), _pipeReadFd(-1), _pipeWriteFd(-1)
+Client::Client(int connFd, const ConfigFileParsing::location_list_t &locations)
+	: _locations(locations), _connFd(connFd), _pipeReadFd(-1), _pipeWriteFd(-1)
 {
 	_inBuffer = "";
 	_outBuffer = "";

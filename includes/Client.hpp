@@ -3,10 +3,12 @@
 
 #include <string>
 
+#include "./parsing/ConfigFileParsing.hpp"
+
 class Client
 {
 public:
-	Client(int connFd); // Change to Client(int connFd, const Config &config);
+	Client(int connFd, const ConfigFileParsing::location_list_t &locations); // Change to Client(int connFd, const Config &config);
 	~Client();
 
 	enum State
@@ -35,6 +37,8 @@ private:
 	Client();
 	Client(const Client &obj);
 	Client &operator=(const Client &obj);
+
+	const ConfigFileParsing::location_list_t &_locations;
 
 	int _connFd;
 	int _pipeReadFd;

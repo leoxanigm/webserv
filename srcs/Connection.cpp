@@ -49,15 +49,15 @@ void Connection::start()
 void Connection::_initSockets()
 {
 	// TODO: abstract server implementation and use ConfigFileParsing::const_iterator
-	std::list<t_servers>::const_iterator it = _config.servers().begin();
+	std::list<t_servers>::const_iterator it = _config.getServers().begin();
 	int count = 0;
 	int socketFd = -1;
 
-	for (; it != _config.servers().end(); it++)
+	for (; it != _config.getServers().end(); it++)
 	{
 		try
 		{
-			socketFd = Socket::newSocket(it->interface.c_str(), it->listen_port.c_str());
+			socketFd = Socket::newSocket(it->listen_interface.c_str(), it->listen_port.c_str());
 			_sockets[socketFd] = &(it->locations);
 			_addPollFd(socketFd, POLLIN);
 			count++;
@@ -65,7 +65,7 @@ void Connection::_initSockets()
 		catch (const std::exception &e)
 		{
 			std::cerr << "Error: starting socket on "
-					  << it->interface << ":" << it->listen_port
+					  << it->listen_interface << ":" << it->listen_port
 					  << e.what() << '\n';
 		}
 	}
@@ -115,9 +115,9 @@ void Connection::_addPollFd(int fd, short event)
 	_pollFds.push_back(newPFd);
 }
 
-void Connection::_addClient(int fd)
+void Connection::_addClient(int fd, const ConfigFileParsing::location_list_t *locations)
 {
-	Client *client = new Client(fd);
+	Client *client = new Client(fd, *locations);
 	_clients.push_back(client); // Client should be initialised with t_locations
 
 	FdEntry entry;
@@ -250,8 +250,8 @@ void Connection::_handleNewConnection(int socketFd)
 	}
 
 	_addPollFd(clientFd, POLLIN | POLLOUT);
-	// _addClient(clientFd, _sockets[socketFd]);
-	_addClient(clientFd);
+	_addClient(clientFd, _sockets[socketFd]);
+	// _addClient(clientFd);
 
 	std::cout << "INFO: new connection on socket " << socketFd << '\n';
 	// Maybe print more info using remoteIP char array?
