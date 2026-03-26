@@ -4,8 +4,10 @@ DEPFLAGS = -MMD -MP
 
 NAME = webserv
 
-SRCS = srcs/HTTPError.cpp srcs/Socket.cpp srcs/Client.cpp srcs/Connection.cpp \
-	   srcs/main.cpp srcs/utils.cpp
+SRCS = srcs/main.cpp srcs/HTTPError.cpp srcs/parsing/HTTPRequestParser.cpp \
+		srcs/parsing/parsing_utils.cpp srcs/parsing/ConfigFileParsing.cpp \
+		test/print_parsed_conf.cpp srcs/utils.cpp \
+		srcs/Socket.cpp srcs/Client.cpp srcs/Connection.cpp
 		
 OBJS_DIR = ./.obj
 OBJS = $(SRCS:%.cpp=$(OBJS_DIR)/%.o)
