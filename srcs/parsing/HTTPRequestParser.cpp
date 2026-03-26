@@ -125,6 +125,16 @@ const std::string	&HTTPRequest::getBody() const
 	return (_userAgent);
 }
 
+const std::string	&HTTPRequest::getTransfertEncoding() const
+{
+	return (_transfert_encoding);
+}
+
+void	HTTPRequest::setTransfertEncoding(const std::string &encoding)
+{
+	_transfert_encoding = encoding;
+}
+
 void	HTTPRequest::setLanguages(const std::map<std::string, float> &languages)
 {
 	_languages = languages;
@@ -327,6 +337,8 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 		parseAcceptHeader(value);
 	else if (keyLower == "content-type")
 		parseContentType(value);
+	else if (keyLower == "transfert-encoding")
+		_transfert_encoding = value;
 	else if (keyLower == "content-length")
 		parseContentLength(value);
 

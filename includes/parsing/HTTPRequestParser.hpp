@@ -38,6 +38,7 @@ class HTTPRequest
 		std::string							_requestTarget;
 		std::string							_httpVersion;
 		std::string							_host;
+		std::string							_transfert_encoding;
 		std::string							_userAgent;
 		std::map<std::string, float>		_languages;
 		std::map<std::string, std::string>	_accept;
@@ -83,7 +84,10 @@ class HTTPRequest
 		void		setUserAgent(const std::string &agent);
 		const std::string	&getUserAgent() const;
 
-		void		setBody(const std::string &agent);
+		void		setTransfertEncoding(const std::string &encoding);
+		const std::string	&getTransfertEncoding() const;
+
+		void		setBody(const std::string &body);
 		const std::string	&getBody() const;
 
 		void		setLanguages(const std::map<std::string, float> &languages);
@@ -92,7 +96,7 @@ class HTTPRequest
 		void		setAccept(const std::map<std::string, std::string> &accept);
 		const std::map<std::string, std::string>	&getAccept() const;
 
-		void		setContentType(const std::map<std::string, std::string> &accept);
+		void		setContentType(const std::map<std::string, std::string> &content);
 		const std::map<std::string, std::string>	&getContentType() const;
 
 		void		setContentLength(const unsigned int &length);
