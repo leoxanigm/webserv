@@ -46,8 +46,8 @@ class HTTPRequest
 
 		// POST request specific datas
 		std::string							_transfert_encoding;
-		unsigned int						_contentLength;	// We are not managing Transfer-Encoding
-		std::map<std::string, std::string>	_contentType;
+		int									_contentLength;
+		std::map<std::string, std::string>	_contentType;  // REFACTORED : <type, charset> : <application/x-www-form-urlencoded, UTF-8>
 		std::string							_body;
 
 		bool		parseMethodToken(const std::string &methodToken);
@@ -99,8 +99,8 @@ class HTTPRequest
 		void		setContentType(const std::map<std::string, std::string> &content);
 		const std::map<std::string, std::string>	&getContentType() const;
 
-		void		setContentLength(const unsigned int &length);
-		const unsigned int	&getContentLength() const;
+		void		setContentLength(const int &length);
+		const int	&getContentLength() const;
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/26 12:46:18 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/03/26 12:49:45 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,10 +77,10 @@ typedef struct	s_locations
 
 	s_locations() : 
 		location("/"),
+		autoindex(false),
 		is_cgi(false),
 		cgi_type(NONE),
-		cgi_location(NULL),
-		autoindex(false),
+		cgi_location(""),
 		return_code(200),
 		root("./"),
 		index("index.html") {}

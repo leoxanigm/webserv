@@ -12,11 +12,14 @@
 
 #include "../../includes/parsing/HTTPRequestParser.hpp"
 #include "../../includes/parsing/parsing_utils.hpp"
+#include "../../includes/utils.hpp"
 
 HTTPRequest::HTTPRequest() : _method(GET), _valid(true), _error("")
 {}
 
-HTTPRequest::HTTPRequest(const std::string &raw) : _method(GET), _valid(true)
+HTTPRequest::HTTPRequest(const std::string &raw) : _method(GET),
+													_valid(true),
+													_contentLength(0)
 {
 	parseRaw(raw);
 }
@@ -95,12 +98,12 @@ void	HTTPRequest::setHost(const std::string &host)
 	_host = host;
 }
 
-const unsigned int	&HTTPRequest::getContentLength() const
+const int	&HTTPRequest::getContentLength() const
 {
 	return (_contentLength);
 }
 
-void	HTTPRequest::setContentLength(const unsigned int &length)
+void	HTTPRequest::setContentLength(const int &length)
 {
 	_contentLength = length;
 }
@@ -122,7 +125,7 @@ void	HTTPRequest::setBody(const std::string &body)
 
 const std::string	&HTTPRequest::getBody() const
 {
-	return (_userAgent);
+	return (_body);
 }
 
 const std::string	&HTTPRequest::getTransfertEncoding() const
@@ -188,7 +191,7 @@ bool	HTTPRequest::parseMethodToken(const std::string &methodToken)
 bool	HTTPRequest::parseRequestLine(const std::string &line)
 {
 	std::string::size_type s1 = line.find(' ');
-	if (s1 == std::string::npos)
+	if (utils::ft_count(line, ' ') > 2 || s1 == std::string::npos)
 	{
 		_error = "invalid request line";
 		return (false);
@@ -295,16 +298,42 @@ void	HTTPRequest::parseAcceptHeader(const std::string &value)
 
 void	HTTPRequest::parseContentType(const std::string &value)
 {
-	std::string::size_type sep = value.find('/');
-	std::string type = trim(value.substr(0, sep));
-	std::string val = trim(value.substr(sep + 1));
+	std::string::size_type semi = value.find(';');
+	std::string mediaType = trim(value.substr(0, semi));
+	_contentType[mediaType] = "";
 
-	_contentType[type] = val;
+	if (semi != std::string::npos)
+	{
+		std::string::size_type start = semi + 1;
+		while (start <= value.size())
+		{
+			std::string::size_type next_semi = value.find(';', start);
+			std::string param = trim(value.substr(start, next_semi == std::string::npos ? std::string::npos : next_semi - start));
+			
+			if (!param.empty())
+			{
+				std::string::size_type eq = param.find('=');
+				if (eq != std::string::npos)
+				{
+					std::string pKey = trim(param.substr(0, eq));
+					std::string pVal = trim(param.substr(eq + 1));
+					_contentType[pKey] = pVal;
+				}
+			}
+			
+			if (next_semi == std::string::npos)
+				break;
+			start = next_semi + 1;
+		}
+	}
 }
 
 void	HTTPRequest::parseContentLength(const std::string &value)
 {
-	_contentLength = std::atoi(value.c_str());
+	if (utils::ft_str_is_digits(value))
+		_contentLength = std::atoi(value.c_str());
+	else
+		_contentLength = -1;
 }
 
 bool	HTTPRequest::parseHeaderLine(const std::string &line)
@@ -327,21 +356,29 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 	std::string keyLower = key;
 	std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), ::tolower);
 
-	if (keyLower == "host")
+	if (keyLower == "host" && _host.empty())
 		_host = value;
-	else if (keyLower == "user-agent")
+	else if (keyLower == "user-agent" && _userAgent.empty())
 		_userAgent = value;
-	else if (keyLower == "accept-language")
+	else if (keyLower == "accept-language" && _languages.empty())
 		parseAcceptLanguage(value);
-	else if (keyLower == "accept")
+	else if (keyLower == "accept" && _accept.empty())
 		parseAcceptHeader(value);
-	else if (keyLower == "content-type")
+	else if (keyLower == "content-type" && _contentType.empty())
 		parseContentType(value);
-	else if (keyLower == "transfert-encoding")
+	else if (keyLower == "transfert-encoding" && _transfert_encoding.empty())
 		_transfert_encoding = value;
 	else if (keyLower == "content-length")
+	{
 		parseContentLength(value);
-
+		if (_contentLength == -1)
+			return (false);
+	}
+	else
+	{
+		_error = "invalid header key";
+		return (false);
+	}
 	return (true);
 }
 
@@ -374,7 +411,7 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 		}
 
 		if (line.empty())
-			continue ;
+			break ;
 
 		if (!parseHeaderLine(line))
 		{
@@ -386,4 +423,20 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 	std::string::size_type body_begin = raw.find("\r\n\r\n");
 	if (body_begin != std::string::npos)
 		_body = raw.substr(body_begin + 4);
+	
+	if (_host.empty())
+	{
+		_valid = false;
+		_error = "missing host header line";
+	}
+	if (_body.length() != static_cast<unsigned int>(_contentLength))
+	{
+		_valid = false;
+		_error = "content length is not the same length as the actual body";
+	}
+	if (_method == GET && (!_body.empty() || !_contentType.empty()))
+	{
+		_valid = false;
+		_error = "body in a GET request";
+	}
 }

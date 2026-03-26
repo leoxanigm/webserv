@@ -6,48 +6,46 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/25 13:36:19 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/26 11:58:06 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/03/26 13:07:36 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../includes/tests.hpp"
 
-void display_parsed_conf_file(const ConfigFileParsing &config)
+void display_parsed_request(const HTTPRequest &request)
 {
-	std::list<t_servers>	srvs = config.getServers();
-	std::list<t_servers>::iterator it;
-
-	for (it = srvs.begin(); it != srvs.end(); ++it)
+	std::cout << "--- HTTP Request ---" << std::endl;
+	std::cout << "Method: ";
+	switch (request.getMethod())
 	{
-		std::cout << "server_name : " << it->server_name << std::endl;
-		std::cout << "listen_interface : " << it->listen_interface << std::endl;
-		std::cout << "listen_port : " << it->listen_port << std::endl;
-		std::cout << "is_default_server : " << it->is_default_server << std::endl << std::endl;
-
-		std::cout << "Locations : " << std::endl;
-		std::list<t_locations>	locs = it->locations;
-		std::list<t_locations>::iterator it2;
-		for (it2 = locs.begin(); it2 != locs.end(); ++it2)
-		{
-			std::cout << "location : " << it2->location << std::endl;
-			std::cout << "autoindex : " << it2->autoindex << std::endl;
-			std::cout << "return_code : " << it2->return_code << std::endl;
-			std::cout << "root : " << it2->root << std::endl;
-			std::cout << "index : " << it2->index << std::endl << std::endl;
-		}
-
-		std::cout << "Status codes : " << std::endl;
-		std::cout << "OK : " << it->error_pages.OK << std::endl;
-		std::cout << "NoContent : " << it->error_pages.NoContent << std::endl;
-		std::cout << "MovedPermanently : " << it->error_pages.MovedPermanently << std::endl;
-		std::cout << "MovedTemporarily : " << it->error_pages.MovedTemporarily << std::endl;
-		std::cout << "BadRequest : " << it->error_pages.BadRequest << std::endl;
-		std::cout << "Unauthorized : " << it->error_pages.Unauthorized << std::endl;
-		std::cout << "Forbidden : " << it->error_pages.Forbidden << std::endl;
-		std::cout << "NotFound : " << it->error_pages.NotFound << std::endl;
-		std::cout << "InternalServerError : " << it->error_pages.InternalServerError << std::endl;
-		std::cout << "NotImplemented : " << it->error_pages.NotImplemented << std::endl;
-		std::cout << "BadGateway : " << it->error_pages.BadGateway << std::endl;
-		std::cout << "ServiceUnavailable : " << it->error_pages.ServiceUnavailable << std::endl;
+		case GET: std::cout << "GET"; break;
+		case POST: std::cout << "POST"; break;
+		case DELETE: std::cout << "DELETE"; break;
 	}
+	std::cout << std::endl;
+	
+	std::cout << "Target: " << request.getRequestTarget() << std::endl;
+	std::cout << "Version: " << request.getHTTPVersion() << std::endl;
+	std::cout << "Host: " << request.getHost() << std::endl;
+	std::cout << "User-Agent: " << request.getUserAgent() << std::endl;
+	std::cout << "Transfer-Encoding: " << request.getTransfertEncoding() << std::endl;
+	std::cout << "Content-Length: " << request.getContentLength() << std::endl;
+	
+	std::cout << "Accept Languages: " << std::endl;
+	for (std::map<std::string, float>::const_iterator it = request.getLanguages().begin(); it != request.getLanguages().end(); ++it)
+		std::cout << "  - " << it->first << ": " << it->second << std::endl;
+		
+	std::cout << "Accept: " << std::endl;
+	for (std::map<std::string, std::string>::const_iterator it = request.getAccept().begin(); it != request.getAccept().end(); ++it)
+		std::cout << "  - " << it->first << ": " << it->second << std::endl;
+		
+	std::cout << "Content-Type: " << std::endl;
+	for (std::map<std::string, std::string>::const_iterator it = request.getContentType().begin(); it != request.getContentType().end(); ++it)
+		std::cout << "  - " << it->first << ": " << it->second << std::endl;
+		
+	std::cout << "Body: " << request.getBody() << std::endl;
+	std::cout << "Valid: " << (request.isValid() ? "true" : "false") << std::endl;
+	if (!request.isValid())
+		std::cout << "Error: " << request.getError() << std::endl;
+	std::cout << "--------------------" << std::endl;
 }
