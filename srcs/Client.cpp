@@ -4,11 +4,11 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <cstring>
-#include <errno.h>
 
 #include "../includes/Client.hpp"
 #include "../includes/HTTPError.hpp"
 #include "../includes/parsing/HTTPRequestParser.hpp"
+#include "../includes/HTTPResponse.hpp"
 
 Client::Client(int connFd, const ConfigFileParsing::location_list_t &locations)
 	: _locations(locations), _connFd(connFd)
@@ -50,7 +50,6 @@ int Client::handleRead(int fd)
 	char buff[4096];
 	ssize_t n = 0;
 
-	errno = 0;
 	while ((n = recv(fd, buff, sizeof(buff), 0)) > 0)
 	{
 		_inBuffer.append(buff, n);
@@ -84,7 +83,7 @@ int Client::handleRead(int fd)
 			std::cout << _inBuffer << '\n';
 	}
 
-	if ((n < 0 && (errno != EAGAIN && errno != EWOULDBLOCK)) || n == 0) // Connection closed
+	if (n <= 0) // Connection closed or error
 	{
 		closePipeReadFd();
 		closePipeWriteFd();
@@ -111,13 +110,16 @@ int Client::handleWrite(int fd)
 
 		content << file.rdbuf();
 
+
+		std::string test = HTTPResponse::directoryListing(_req);
+
 		std::string body = content.str();
 		std::ostringstream response;
 		response << "HTTP/1.1 200 OK\r\n"
 				 << "Content-Type: text/html\r\n"
-				 << "Content-Length: " << body.length() << "\r\n"
+				 << "Content-Length: " << test.length() << "\r\n"
 				 << "\r\n"
-				 << body;
+				 << test;
 
 		std::string arr = response.str();
 		send_res = send(fd, arr.c_str(), arr.length(), 0);
