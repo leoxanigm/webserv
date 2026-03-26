@@ -22,8 +22,10 @@ void sigIntHandler(int sig)
 
 int main(int argc, char const *argv[])
 {
-	(void)argc;
-	(void)argv;
+
+	testHttpParsing();
+
+	return (0);
 
 	signal(SIGINT, sigIntHandler);
 

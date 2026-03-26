@@ -6,7 +6,7 @@
 /*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/26 09:54:59 by zalemu           ###   ########.fr       */
+/*   Updated: 2026/03/26 11:04:03 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,8 +102,10 @@ class ConfigFileParsing
 		ConfigFileParsing(std::string raw_conf);
 		~ConfigFileParsing();
 
-		const std::list<t_servers> &getServers(void) const;
 		typedef std::list<t_locations> location_list_t;
+		typedef t_locations location_t;
+		
+		const std::list<t_servers> &getServers(void) const;
 };
 
 #endif

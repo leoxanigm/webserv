@@ -6,7 +6,7 @@
 /*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/25 13:37:15 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/26 09:58:12 by zalemu           ###   ########.fr       */
+/*   Updated: 2026/03/26 12:27:27 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,5 +19,6 @@
 #include "../includes/UI.hpp"
 
 void	display_parsed_conf_file(const ConfigFileParsing &config);
+void	testHttpParsing(void);
 
 #endif
