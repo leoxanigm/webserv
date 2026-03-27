@@ -8,7 +8,7 @@
 #include "../includes/Client.hpp"
 #include "../includes/HTTPError.hpp"
 #include "../includes/parsing/HTTPRequestParser.hpp"
-#include "../includes/HTTPResponse.hpp"
+#include "../includes/ResponseBuilder.hpp"
 
 Client::Client(int connFd, const ConfigFileParsing::location_list_t &locations)
 	: _locations(locations), _connFd(connFd)
@@ -101,34 +101,40 @@ int Client::handleWrite(int fd)
 	// Check send_res length and remove it from begining of _outBuffer
 	// when _outBuffer is empty, close all pipe fds and set _state = CLOSE_CONNECTION
 
+	(void) fd; //remove
+	
 	int send_res = 0;
 
 	if (_req.isValid())
 	{
-		std::ifstream file("./www/html/index.html");
-		std::ostringstream content;
+		// std::ifstream file("./www/html/index.html");
+		// std::ostringstream content;
 
-		content << file.rdbuf();
+		// content << file.rdbuf();
 
 
-		std::string test = HTTPResponse::directoryListing(_req);
+		// std::string test = HTTPResponse::directoryListing(_req);
 
-		std::string body = content.str();
-		std::ostringstream response;
-		response << "HTTP/1.1 200 OK\r\n"
-				 << "Content-Type: text/html\r\n"
-				 << "Content-Length: " << test.length() << "\r\n"
-				 << "\r\n"
-				 << test;
+		// std::string body = content.str();
+		// std::ostringstream response;
+		// response << "HTTP/1.1 200 OK\r\n"
+		// 		 << "Content-Type: text/html\r\n"
+		// 		 << "Content-Length: " << test.length() << "\r\n"
+		// 		 << "\r\n"
+		// 		 << test;
 
-		std::string arr = response.str();
-		send_res = send(fd, arr.c_str(), arr.length(), 0);
-		if (send_res == -1)
-			std::cerr << "ERROR: sending response: " << '\n';
-		else
-			std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
+		// std::string arr = response.str();
+		// send_res = send(fd, arr.c_str(), arr.length(), 0);
+		// if (send_res == -1)
+		// 	std::cerr << "ERROR: sending response: " << '\n';
+		// else
+		// 	std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
 
-		_inBuffer.clear();
+		// _inBuffer.clear();
+
+		HTTPRequest req;
+		ConfigFileParsing config("default.conf");
+		ResponseBuilder responseBuilder(req, config);
 
 		// close(_pipeFd);
 		_state = CLOSE_CONNECTION;

@@ -6,7 +6,7 @@
 /*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/26 11:04:03 by zalemu           ###   ########.fr       */
+/*   Updated: 2026/03/27 13:13:45 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,6 +64,8 @@ typedef struct	s_locations
 	std::string		root;
 	std::string		index;
 	// Did I miss some ?
+	// redirection
+	// cgi enabled and related cgi paths
 
 	s_locations() : 
 		location("/"),
@@ -85,7 +87,7 @@ typedef struct	s_servers
 	s_servers() : 
 		is_default_server(false),
 		listen_port("8080"),
-		listen_interface("[::]"),
+		listen_interface("[::]"), // test custom host (eg, zalemu.42.fr)
 		server_name("webserv") {}
 }	t_servers;
 

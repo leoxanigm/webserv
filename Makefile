@@ -8,7 +8,7 @@ SRCS = srcs/main.cpp srcs/HTTPError.cpp srcs/parsing/HTTPRequestParser.cpp \
 		srcs/parsing/parsing_utils.cpp srcs/parsing/ConfigFileParsing.cpp \
 		srcs/utils.cpp \
 		srcs/Socket.cpp srcs/Client.cpp srcs/Connection.cpp \
-		srcs/HTTPResponse.cpp \
+		srcs/HTTPResponse.cpp srcs/ResponseBuilder.cpp \
 		test/print_parsed_conf.cpp test/test_http_parsing.cpp
 		
 OBJS_DIR = ./.obj

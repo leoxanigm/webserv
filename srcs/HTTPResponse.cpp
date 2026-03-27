@@ -1,30 +1,96 @@
 #include <string>
+#include <sstream>
+#include <stdexcept>
 #include <ctime>
 
+#include "../includes/HTTPError.hpp"
 #include "../includes/HTTPResponse.hpp"
 
-std::string HTTPResponse::directoryListing(const HTTPRequest &req)
+HTTPResponse::HTTPResponse()
 {
-	// location should have been properly constructed here.
-	// For example, if url was /files and in config if /files was
-	// routed to ./www/html/files,
-	// req.getReqLocation() == /files/
-	// req.getFullPath() == ./www/html/files/
-	// This make sure we separate error checking concern from response
-	// const std::string &reqLocation req.getReqLocation(); // TODO
-	// const std::string &fullPath req.getFullPath(); // TODO
-
-	(void) req; // remove after fixing the line above
-
-	const std::string &reqLocation = "/files";
-	const std::string &fullPath = "./www/html/files";
-
-	std::string response;
-	
-	return (response);
+	_statusCode = 200;
+	_httpVersion = "HTTP/1.1";
+	_body = "";
 }
 
-const std::string &HTTPResponse::_dateGMT()
+HTTPResponse::~HTTPResponse() {}
+
+void HTTPResponse::setStatusCode(int code)
+{
+	if (code < 200 || code > 505)
+		throw std::invalid_argument("Error: setStatusCode: code must be >= 200 and <= 505");
+	_statusCode = code;
+}
+
+void HTTPResponse::setHeader(const std::string &key, const std::string &value)
+{
+	if (key != "Content-Length" && key != "Date" && key != "Connection")
+		_headers[key] = value;
+}
+
+void HTTPResponse::setBody(const std::string &body)
+{
+	_body = body;
+}
+
+std::string HTTPResponse::toString() const
+{
+	std::ostringstream header;
+
+	header << _statusLineFromCode() << "\r\n";
+	header << "Date: " << _dateGMT() << "\r\n";
+	
+	if (_body.size() > 0)
+		header << "Content-Length: " << _body.size() << "\r\n";
+
+	header << "Connection: close\r\n";
+
+	std::map<std::string, std::string>::const_iterator it = _headers.begin();
+
+	for (; it != _headers.end(); it++)
+		header << it->first << ": " << it->second << "\r\n";
+
+	header << "\r\n";
+	header << _body;
+
+	return (header.str());
+}
+
+std::string HTTPResponse::_statusLineFromCode(void) const
+{
+	std::ostringstream statusLine;
+
+	statusLine << _httpVersion << " ";
+	statusLine << _statusCode << " ";
+
+	if (_statusCode >= 400 && _statusCode <= 505) // error
+	{
+		HTTPError errorStatus(_statusCode);
+		statusLine << errorStatus.what();
+	}
+	else // success or redirect
+	{
+		switch (_statusCode)
+		{
+		case OK:
+			statusLine << "OK";
+			break;
+		case CREATED:
+			statusLine << "Created";
+			break;
+		case PERMANENT_REDIRECT:
+			statusLine << "Permanent Redirect";
+			break;
+		default:
+			statusLine << "Unknown";
+			break;
+		}
+	}
+
+	return (statusLine.str());
+}
+
+std::string HTTPResponse::_dateGMT() const
 {
 	std::time_t now = std::time(0);
 	std::tm *gmt = std::gmtime(&now);
@@ -32,12 +98,4 @@ const std::string &HTTPResponse::_dateGMT()
 
 	std::strftime(buff, sizeof(buff), "%a, %d %b %Y %H:%M:%S GMT", gmt);
 	return (std::string(buff));
-}
-
-const std::string &HTTPResponse::_successHeader()
-{
-	std::string header = "HTTP/1.1 200 OK\r\n";
-	header += "Date: " + _dateGMT() + "\r\n";
-	header += "Server: webserv\r\n";
-	header += "Content-Type: text/html;charset=UTF-8\r\n";
 }

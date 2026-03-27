@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 
+#include "./HTTPError.hpp"
 #include "./parsing/HTTPRequestParser.hpp"
 #include "./parsing/ConfigFileParsing.hpp"
 
@@ -26,18 +27,26 @@
 class HTTPResponse
 {
 public:
-	HTTPResponse(const HTTPRequest &req, const ConfigFileParsing &config);
+	HTTPResponse();
 	~HTTPResponse();
 
+	enum Code
+	{
+		OK = 200,
+		// send Location attribute with the new data location
+		CREATED = 201,
+		// using 308 instead of 301 as we want the user agent to use the same
+		// request method on the redirect URI
+		PERMANENT_REDIRECT = 308,
+	};
+
 	void setStatusCode(int code);
-	void setHTTPVersion(const std::string &version);
 	void setHeader(const std::string &key, const std::string &value);
 	void setBody(const std::string &body);
 
-	std::string toString();
+	std::string toString() const;
 
 private:
-	HTTPResponse();
 	HTTPResponse(const HTTPResponse &obj);
 	HTTPResponse &operator=(const HTTPResponse &obj);
 
@@ -45,6 +54,9 @@ private:
 	std::string _httpVersion;
 	std::map<std::string, std::string> _headers;
 	std::string _body;
+
+	std::string _statusLineFromCode(void) const;
+	std::string _dateGMT() const;
 };
 
 // class ResponseBuilder
