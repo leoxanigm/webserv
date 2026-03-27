@@ -4,11 +4,11 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <cstring>
-#include <errno.h>
 
 #include "../includes/Client.hpp"
 #include "../includes/HTTPError.hpp"
 #include "../includes/parsing/HTTPRequestParser.hpp"
+#include "../includes/ResponseBuilder.hpp"
 
 Client::Client(int connFd, const ConfigFileParsing::location_list_t &locations)
 	: _locations(locations), _connFd(connFd)
@@ -50,7 +50,6 @@ int Client::handleRead(int fd)
 	char buff[4096];
 	ssize_t n = 0;
 
-	errno = 0;
 	while ((n = recv(fd, buff, sizeof(buff), 0)) > 0)
 	{
 		_inBuffer.append(buff, n);
@@ -84,7 +83,7 @@ int Client::handleRead(int fd)
 			std::cout << _inBuffer << '\n';
 	}
 
-	if ((n < 0 && (errno != EAGAIN && errno != EWOULDBLOCK)) || n == 0) // Connection closed
+	if (n <= 0) // Connection closed or error
 	{
 		closePipeReadFd();
 		closePipeWriteFd();
@@ -102,31 +101,40 @@ int Client::handleWrite(int fd)
 	// Check send_res length and remove it from begining of _outBuffer
 	// when _outBuffer is empty, close all pipe fds and set _state = CLOSE_CONNECTION
 
+	(void) fd; //remove
+	
 	int send_res = 0;
 
 	if (_req.isValid())
 	{
-		std::ifstream file("./www/html/index.html");
-		std::ostringstream content;
+		// std::ifstream file("./www/html/index.html");
+		// std::ostringstream content;
 
-		content << file.rdbuf();
+		// content << file.rdbuf();
 
-		std::string body = content.str();
-		std::ostringstream response;
-		response << "HTTP/1.1 200 OK\r\n"
-				 << "Content-Type: text/html\r\n"
-				 << "Content-Length: " << body.length() << "\r\n"
-				 << "\r\n"
-				 << body;
 
-		std::string arr = response.str();
-		send_res = send(fd, arr.c_str(), arr.length(), 0);
-		if (send_res == -1)
-			std::cerr << "ERROR: sending response: " << '\n';
-		else
-			std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
+		// std::string test = HTTPResponse::directoryListing(_req);
 
-		_inBuffer.clear();
+		// std::string body = content.str();
+		// std::ostringstream response;
+		// response << "HTTP/1.1 200 OK\r\n"
+		// 		 << "Content-Type: text/html\r\n"
+		// 		 << "Content-Length: " << test.length() << "\r\n"
+		// 		 << "\r\n"
+		// 		 << test;
+
+		// std::string arr = response.str();
+		// send_res = send(fd, arr.c_str(), arr.length(), 0);
+		// if (send_res == -1)
+		// 	std::cerr << "ERROR: sending response: " << '\n';
+		// else
+		// 	std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
+
+		// _inBuffer.clear();
+
+		HTTPRequest req;
+		ConfigFileParsing config("default.conf");
+		ResponseBuilder responseBuilder(req, config);
 
 		// close(_pipeFd);
 		_state = CLOSE_CONNECTION;
