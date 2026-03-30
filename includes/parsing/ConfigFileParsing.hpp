@@ -3,14 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-<<<<<<< HEAD
-/*   Updated: 2026/03/26 12:49:45 by mathboye         ###   ########.fr       */
-=======
-/*   Updated: 2026/03/27 13:13:45 by zalemu           ###   ########.fr       */
->>>>>>> origin/zalemu
+/*   Updated: 2026/03/29 19:38:30 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 

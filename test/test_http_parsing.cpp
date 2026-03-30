@@ -161,7 +161,6 @@ void testHttpParsing(void)
 		expectEqualUInt("POST content-length parsed", req.getContentLength(), 25);
 		expectEqualStr("POST body parsed", req.getBody(), body);
 
-		display_parsed_request(req);
 		expectMapContainsStrStr("Content-Type contains media type",
 			req.getContentType(), "application/x-www-form-urlencoded", "");
 		expectMapContainsStrStr("Content-Type contains charset",
@@ -476,6 +475,7 @@ void testHttpParsing(void)
 			"\r\n";
 
 		HTTPRequest req(raw);
+		display_parsed_request(req);
 		expectFalse("invalid Accept-Language malformed q", req.isValid());
 	}
 
@@ -490,6 +490,7 @@ void testHttpParsing(void)
 			"\r\n";
 
 		HTTPRequest req(raw);
+
 		expectFalse("invalid malformed Accept header", req.isValid());
 	}
 

@@ -52,9 +52,9 @@ class HTTPRequest
 
 		bool		parseMethodToken(const std::string &methodToken);
 		bool		parseRequestLine(const std::string &line);
-		void		parseAcceptLanguage(const std::string &value);
-		void		parseContentType(const std::string &value);
-		void		parseAcceptHeader(const std::string &value);
+		bool		parseAcceptLanguage(const std::string &value);
+		bool		parseContentType(const std::string &value);
+		bool		parseAcceptHeader(const std::string &value);
 		bool		parseHeaderLine(const std::string &line);
 		void		parseRaw(const std::string &raw);
 		void		parseContentLength(const std::string &value);

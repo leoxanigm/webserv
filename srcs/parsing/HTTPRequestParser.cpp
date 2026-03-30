@@ -14,6 +14,8 @@
 #include "../../includes/parsing/parsing_utils.hpp"
 #include "../../includes/utils.hpp"
 
+#include <climits>
+
 HTTPRequest::HTTPRequest() : _method(GET), _valid(true), _error("")
 {}
 
@@ -40,6 +42,10 @@ HTTPRequest	&HTTPRequest::operator=(const HTTPRequest &other)
 	_userAgent = other._userAgent;
 	_languages = other._languages;
 	_accept = other._accept;
+	_contentType = other._contentType;
+	_transfert_encoding = other._transfert_encoding;
+	_contentLength = other._contentLength;
+	_body = other._body;
 	_valid = other._valid;
 	_error = other._error;
 	return (*this);
@@ -217,6 +223,11 @@ bool	HTTPRequest::parseRequestLine(const std::string &line)
 		_error = "unsupported method";
 		return (false);
 	}
+	if (target[0] != '/')
+	{
+		_error = "invalid request target";
+		return (false);
+	}
 	if (version.compare(0, 5, "HTTP/") != 0)
 	{
 		_error = "invalid http version";
@@ -228,7 +239,7 @@ bool	HTTPRequest::parseRequestLine(const std::string &line)
 	return (true);
 }
 
-void	HTTPRequest::parseAcceptLanguage(const std::string &value)
+bool	HTTPRequest::parseAcceptLanguage(const std::string &value)
 {
 	std::string::size_type start = 0;
 
@@ -244,6 +255,8 @@ void	HTTPRequest::parseAcceptLanguage(const std::string &value)
 			if (semi != std::string::npos)
 			{
 				langToken = trim(item.substr(0, semi));
+				if (langToken.empty())
+					return (false);
 				std::string qStr;
 				std::string::size_type qPos = item.find("q=", semi);
 				if (qPos != std::string::npos)
@@ -251,20 +264,26 @@ void	HTTPRequest::parseAcceptLanguage(const std::string &value)
 					qStr = trim(item.substr(qPos + 2));
 					char *end;
 					float q = std::strtof(qStr.c_str(), &end);
-					if (end != qStr.c_str() && *end == '\0')
-						qValue = q;
+					if (end == qStr.c_str() || *end != '\0')
+						return (false);
+					qValue = q;
 				}
+				else
+					return (false);
 			}
 			if (!langToken.empty())
 				_languages[langToken] = qValue;
+			else
+				return (false);
 		}
 		if (comma == std::string::npos)
 			break;
 		start = comma + 1;
 	}
+	return (true);
 }
 
-void	HTTPRequest::parseAcceptHeader(const std::string &value)
+bool	HTTPRequest::parseAcceptHeader(const std::string &value)
 {
 	std::string::size_type start = 0;
 	while (start <= value.size())
@@ -274,32 +293,43 @@ void	HTTPRequest::parseAcceptHeader(const std::string &value)
 		if (!item.empty())
 		{
 			std::string typeToken = item;
-			std::string qValue = "1";
+			std::string qValue = "";
 			std::string::size_type semi = item.find(';');
 			if (semi != std::string::npos)
 			{
 				typeToken = trim(item.substr(0, semi));
+				if (typeToken.empty())
+					return (false);
 				std::string::size_type qPos = item.find("q=", semi);
-				if (qPos != std::string::npos)
-				{
-					std::string qParsed = trim(item.substr(qPos + 2));
-					if (!qParsed.empty())
-						qValue = qParsed;
-				}
+				if (qPos == std::string::npos)
+					return (false);
+				std::string qParsed = trim(item.substr(qPos + 2));
+				if (qParsed.empty())
+					return (false);
+				qValue = qParsed;
 			}
 			if (!typeToken.empty())
 				_accept[typeToken] = qValue;
+			else
+				return (false);
 		}
 		if (comma == std::string::npos)
 			break;
 		start = comma + 1;
 	}
+	if (_accept.find("*/*") == _accept.end())
+		_accept["*/*"] = "";
+	return (true);
 }
 
-void	HTTPRequest::parseContentType(const std::string &value)
+bool	HTTPRequest::parseContentType(const std::string &value)
+
+
 {
 	std::string::size_type semi = value.find(';');
 	std::string mediaType = trim(value.substr(0, semi));
+	if (mediaType.empty())
+		return (false);
 	_contentType[mediaType] = "";
 
 	if (semi != std::string::npos)
@@ -309,34 +339,52 @@ void	HTTPRequest::parseContentType(const std::string &value)
 		{
 			std::string::size_type next_semi = value.find(';', start);
 			std::string param = trim(value.substr(start, next_semi == std::string::npos ? std::string::npos : next_semi - start));
-			
+
 			if (!param.empty())
 			{
 				std::string::size_type eq = param.find('=');
-				if (eq != std::string::npos)
-				{
-					std::string pKey = trim(param.substr(0, eq));
-					std::string pVal = trim(param.substr(eq + 1));
-					_contentType[pKey] = pVal;
-				}
+				if (eq == std::string::npos)
+					return (false);
+				std::string pKey = trim(param.substr(0, eq));
+				std::string pVal = trim(param.substr(eq + 1));
+				if (pKey.empty() || pVal.empty())
+					return (false);
+				_contentType[pKey] = pVal;
 			}
-			
+
 			if (next_semi == std::string::npos)
 				break;
 			start = next_semi + 1;
 		}
 	}
+	if (toLower(mediaType) == "multipart/form-data"
+		&& _contentType.find("boundary") == _contentType.end())
+		return (false);
+	return (true);
 }
 
 void	HTTPRequest::parseContentLength(const std::string &value)
+
+
 {
-	if (utils::ft_str_is_digits(value))
-		_contentLength = std::atoi(value.c_str());
-	else
+	if (!utils::ft_str_is_digits(value))
+	{
 		_contentLength = -1;
+		return ;
+	}
+	char *end = NULL;
+	long parsed = std::strtol(value.c_str(), &end, 10);
+	if (end == value.c_str() || *end != '\0' || parsed < 0 || parsed > INT_MAX)
+	{
+		_contentLength = -1;
+		return ;
+	}
+	_contentLength = static_cast<int>(parsed);
 }
 
 bool	HTTPRequest::parseHeaderLine(const std::string &line)
+
+
 {
 	std::string::size_type sep = line.find(':');
 	if (sep == std::string::npos)
@@ -356,28 +404,45 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 	std::string keyLower = key;
 	std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), ::tolower);
 
-	if (keyLower == "host" && _host.empty())
-		_host = value;
-	else if (keyLower == "user-agent" && _userAgent.empty())
-		_userAgent = value;
-	else if (keyLower == "accept-language" && _languages.empty())
-		parseAcceptLanguage(value);
-	else if (keyLower == "accept" && _accept.empty())
-		parseAcceptHeader(value);
-	else if (keyLower == "content-type" && _contentType.empty())
-		parseContentType(value);
-	else if (keyLower == "transfert-encoding" && _transfert_encoding.empty())
-		_transfert_encoding = value;
-	else if (keyLower == "content-length")
+	if (keyLower == "host")
 	{
+		if (!_host.empty())
+		{
+			_error = "duplicate host header";
+			return (false);
+		}
+		_host = value;
+		return (true);
+	}
+	if (keyLower == "user-agent")
+	{
+		if (_userAgent.empty())
+			_userAgent = value;
+		return (true);
+	}
+	if (keyLower == "accept-language")
+		return (parseAcceptLanguage(value));
+	if (keyLower == "accept")
+		return (parseAcceptHeader(value));
+	if (keyLower == "content-type")
+		return (parseContentType(value));
+	if (keyLower == "transfer-encoding")
+	{
+		if (_transfert_encoding.empty())
+			_transfert_encoding = toLower(value);
+		return (true);
+	}
+	if (keyLower == "content-length")
+	{
+		if (_contentLength != 0)
+		{
+			_error = "duplicate content-length header";
+			return (false);
+		}
 		parseContentLength(value);
 		if (_contentLength == -1)
 			return (false);
-	}
-	else
-	{
-		_error = "invalid header key";
-		return (false);
+		return (true);
 	}
 	return (true);
 }
@@ -389,8 +454,18 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 		The raw request formated with CRLF at the end on each line.
 */
 void	HTTPRequest::parseRaw(const std::string &raw)
+
+
 {
-	std::istringstream rawStream(raw);
+	std::string::size_type body_begin = raw.find("\r\n\r\n");
+	if (body_begin == std::string::npos)
+	{
+		_valid = false;
+		_error = "missing header/body separator";
+		return ;
+	}
+
+	std::istringstream rawStream(raw.substr(0, body_begin + 2));
 	std::string line;
 	bool isFirstLine = true;
 
@@ -419,20 +494,35 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 			return ;
 		}
 	}
-	std::cout << "find" << std::endl;
-	std::string::size_type body_begin = raw.find("\r\n\r\n");
-	if (body_begin != std::string::npos)
-		_body = raw.substr(body_begin + 4);
-	
+
+	_body = raw.substr(body_begin + 4);
+
 	if (_host.empty())
 	{
 		_valid = false;
 		_error = "missing host header line";
+		return ;
+	}
+	if (!_transfert_encoding.empty() && _contentLength > 0)
+	{
+		_valid = false;
+		_error = "both content-length and transfer-encoding are set";
+		return ;
+	}
+	if (toLower(_transfert_encoding) == "chunked")
+	{
+		if (_body.find("\r\n0\r\n\r\n") == std::string::npos)
+		{
+			_valid = false;
+			_error = "invalid chunked body";
+		}
+		return ;
 	}
 	if (_body.length() != static_cast<unsigned int>(_contentLength))
 	{
 		_valid = false;
 		_error = "content length is not the same length as the actual body";
+		return ;
 	}
 	if (_method == GET && (!_body.empty() || !_contentType.empty()))
 	{
