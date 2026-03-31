@@ -23,9 +23,9 @@ void sigIntHandler(int sig)
 int main(int argc, char const *argv[])
 {
 
-	testHttpParsing();
+	// testHttpParsing();
 
-	return (0);
+	// return (0);
 
 	signal(SIGINT, sigIntHandler);
 
@@ -45,7 +45,7 @@ int main(int argc, char const *argv[])
 		raw += "\n";
 	}
 	ConfigFileParsing	config(raw);
-	display_parsed_conf_file(config);  // Debug
+	// display_parsed_conf_file(config);  // Debug
 
 	try
 	{

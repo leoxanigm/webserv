@@ -1,3 +1,4 @@
+#include <sstream>
 #include <ctime>
 #include <cstring>
 #include <sys/types.h>
@@ -20,6 +21,11 @@ ResponseBuilder::~ResponseBuilder()
 {
 }
 
+const std::string &ResponseBuilder::getBody() const
+{
+	return (_body);
+}
+
 void ResponseBuilder::_directoryListing()
 {
 	// location should have been properly constructed here.
@@ -31,8 +37,8 @@ void ResponseBuilder::_directoryListing()
 	// const std::string &reqLocation _req.getReqLocation(); // TODO
 	// const std::string &fullPath _req.getFullPath(); // TODO
 
-	// const std::string &reqLocation = "/files/";
-	const std::string &fullPath = "./www/html/files/";
+	const std::string reqLocation = "/files/";
+	const std::string fullPath = "./www/html/files/";
 
 	// TODO
 	// * Check if directory listing allowed for the current fullPath in config
@@ -54,6 +60,26 @@ void ResponseBuilder::_directoryListing()
 		return;
 	}
 
+	std::string header = "Index of " + reqLocation;
+
+	std::string parentDir;
+	if (reqLocation[reqLocation.size() - 1] == '/')
+		parentDir = reqLocation.substr(0, reqLocation.size() - 1);
+	else
+		parentDir = reqLocation;
+
+	parentDir = parentDir.substr(0, parentDir.find_last_of("/"));
+	if (parentDir.empty())
+		parentDir = "/";
+
+	std::ostringstream output;
+	output << "<!DOCTYPE html><html><head><title>" << header
+		   << "</title></head><body><h1>" << header
+		   << "</h1><table><tr><th>Name</th><th>Last modified</th>"
+		   << "<th>Size</th></tr><tr><th colspan=\"3\"><hr /></th></tr>"
+		   << "<tr><td><a href=\"" << parentDir << "\">Parent Directory</a></td>"
+		   << "<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>";
+
 	struct dirent *dirIt = 0;
 	struct stat statBuff;
 	struct std::tm *tm;
@@ -65,6 +91,9 @@ void ResponseBuilder::_directoryListing()
 			std::strcmp(dirIt->d_name, "..") == 0)
 			continue;
 
+		output << "<tr><td><a href=\"" << dirIt->d_name << "\">"
+			   << dirIt->d_name << "</a></td>";
+
 		filePath = fullPath + std::string(dirIt->d_name);
 		if (stat(filePath.c_str(), &statBuff) == -1)
 			continue;
@@ -72,23 +101,20 @@ void ResponseBuilder::_directoryListing()
 		tm = std::localtime(&statBuff.st_mtime);
 		std::strftime(dateStr, sizeof(dateStr), "%Y-%m-%d %H:%M", tm);
 
-		std::cout << dirIt->d_name << " "
-				  << dateStr << " ";
+		output << "<td>" << dateStr << "</td><td align=\"right\">";
 
 		if (S_ISREG(statBuff.st_mode)) // If regular file, show size
-			std::cout << static_cast<float>(statBuff.st_size) / 1000 << "K\n";
+			output << static_cast<float>(statBuff.st_size) / 1000 << "K\n";
 		else
-			std::cout << "-\n";
+			output << " - \n";
+
+		output << "</td></tr>";
 	}
 
-	// text.txt 2026-03-27 12:25 0K
-	// file.pdf 2026-03-27 12:25 0K
-	// audio.mp3 2026-03-27 12:26 0K
-	// video.mp4 2026-03-27 13:22 25.814K
-	// folder 2026-03-27 13:52 -
+	output << "</table></body></html>";
+	_body = output.str();
 
 	closedir(directory);
-	// std::string response;
 }
 
 std::string ResponseBuilder::_getMimeType(const std::string &path)

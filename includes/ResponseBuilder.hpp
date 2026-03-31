@@ -11,6 +11,8 @@ public:
 	ResponseBuilder(const HTTPRequest &req, const ConfigFileParsing &config);
 	~ResponseBuilder();
 
+	const std::string &getBody() const;
+
 private:
 	ResponseBuilder(const ResponseBuilder &obj);
 	ResponseBuilder &operator=(const ResponseBuilder &obj);
@@ -18,6 +20,8 @@ private:
 	const HTTPRequest &_req;
 	const ConfigFileParsing &_config;
 	HTTPResponse _res;
+
+	std::string _body;
 
 	void _directoryListing();
 

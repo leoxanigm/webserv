@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <cstring>
+#include <errno.h>
 
 #include "../includes/Client.hpp"
 #include "../includes/HTTPError.hpp"
@@ -18,6 +19,7 @@ Client::Client(int connFd, const ConfigFileParsing::location_list_t &locations)
 	_pipeReadFd = -1;
 	_pipeWriteFd = -1;
 	_state = READ_REQUEST;
+	_sentSize = 0;
 }
 
 Client::~Client()
@@ -33,9 +35,6 @@ Client::~Client()
 int Client::handleRead(int fd)
 {
 	// TODO:
-	// loop on recv()
-	// stop on EAGAIN / EWOULDBLOCK
-	// if recv() returns 0, client sent all data and closed
 	// Talk with Mathys on how to implement requestComplete for
 	//	* normal body
 	//  * form body
@@ -48,40 +47,36 @@ int Client::handleRead(int fd)
 	//	* php-cgi (https://php-dictionary.readthedocs.io/en/latest/dictionary/cgi.ini.html)
 
 	char buff[4096];
-	ssize_t n = 0;
 
-	while ((n = recv(fd, buff, sizeof(buff), 0)) > 0)
-	{
-		_inBuffer.append(buff, n);
+	ssize_t n = recv(fd, buff, sizeof(buff), 0);
+	_inBuffer.append(buff, n);
+	_req = HTTPRequest(_inBuffer);
 
-		// buff[n] = '\0';
+	// if (_req.isValid())
+	// {
 
-		// std::cout << "INFO: received buffer:\n" << buff << '\n';
+	// }
 
-		std::memset(buff, 0, 4096);
+	// 	if (_req.isValid()) // Received the whole request buffer
+	// 	{
+	// 		_state = SEND_RESPONSE;
 
-		_req = HTTPRequest(_inBuffer);
+	// 		std::cout << "INFO: received " << n << " bytes from " << fd << '\n';
 
-		if (_req.isValid()) // Received the whole request buffer
-		{
-			_state = SEND_RESPONSE;
-
-			std::cout << "INFO: received " << n << " bytes from " << fd << '\n';
-
-			// if (_useCGI(req.getLocation()))
-			// {
-			// 	// Handle CGI
-			// 	// set pipeFd
-			// 	// _state = SEND_PIPE;
-			// }
-			// else
-			// {
-			// 	// Handle static files
-			// }
-		}
-		else
-			std::cout << _inBuffer << '\n';
-	}
+	// 		// if (_useCGI(req.getLocation()))
+	// 		// {
+	// 		// 	// Handle CGI
+	// 		// 	// set pipeFd
+	// 		// 	// _state = SEND_PIPE;
+	// 		// }
+	// 		// else
+	// 		// {
+	// 		// 	// Handle static files
+	// 		// }
+	// 	}
+	// 	else
+	// 		std::cout << _inBuffer << '\n';
+	// }
 
 	if (n <= 0) // Connection closed or error
 	{
@@ -101,8 +96,8 @@ int Client::handleWrite(int fd)
 	// Check send_res length and remove it from begining of _outBuffer
 	// when _outBuffer is empty, close all pipe fds and set _state = CLOSE_CONNECTION
 
-	(void) fd; //remove
-	
+	// (void) fd; //remove
+
 	int send_res = 0;
 
 	if (_req.isValid())
@@ -112,35 +107,41 @@ int Client::handleWrite(int fd)
 
 		// content << file.rdbuf();
 
-
-		// std::string test = HTTPResponse::directoryListing(_req);
-
-		// std::string body = content.str();
-		// std::ostringstream response;
-		// response << "HTTP/1.1 200 OK\r\n"
-		// 		 << "Content-Type: text/html\r\n"
-		// 		 << "Content-Length: " << test.length() << "\r\n"
-		// 		 << "\r\n"
-		// 		 << test;
-
-		// std::string arr = response.str();
-		// send_res = send(fd, arr.c_str(), arr.length(), 0);
-		// if (send_res == -1)
-		// 	std::cerr << "ERROR: sending response: " << '\n';
-		// else
-		// 	std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
-
-		// _inBuffer.clear();
-
 		HTTPRequest req;
 		ConfigFileParsing config("default.conf");
 		ResponseBuilder responseBuilder(req, config);
 
+		const std::string &test = responseBuilder.getBody();
+
+		std::ostringstream response;
+		response << "HTTP/1.1 200 OK\r\n"
+				 << "Content-Type: text/html\r\n"
+				 << "Content-Length: " << test.length() << "\r\n"
+				 << "\r\n"
+				 << test;
+
+		const std::string &res = response.str();
+		send_res = send(fd, res.c_str(), res.length(), 0);
+		if (send_res == -1)
+		{
+			_state = CLOSE_CONNECTION;
+			std::cerr << "ERROR: sending response: " << '\n';
+		}
+		else
+		{
+			_sentSize += send_res;
+			std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
+		}
+
+		_inBuffer.clear();
+
 		// close(_pipeFd);
-		_state = CLOSE_CONNECTION;
+		if (_outBuffer.size() == _sentSize)
+			_state = CLOSE_CONNECTION;
 	}
 
-	return (send_res);
+	// return (send_res);
+	return (1);
 }
 
 int Client::getConnFd() const

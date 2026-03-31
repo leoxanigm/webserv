@@ -48,6 +48,7 @@ private:
 	std::string _inBuffer;
 	std::string _outBuffer;
 
+	std::size_t _sentSize;
 	State _state;
 };
 

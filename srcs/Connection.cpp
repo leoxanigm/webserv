@@ -197,11 +197,15 @@ void Connection::_processConnections()
 		client = 0;
 
 		if (revents & POLLERR)
+		{
+			// std::cout << "POLLERR" << '\n';
 			removeClient = true;
+		}
 		else
 		{
 			if (revents & POLLIN)
 			{
+				// std::cout << "POLLIN" << '\n';
 				if (_sockets.find(fd) != _sockets.end()) // New connection
 					_handleNewConnection(fd);
 				else if (_handleClient(fd, POLLIN) == -1)
@@ -210,12 +214,14 @@ void Connection::_processConnections()
 
 			if (!removeClient && (revents & POLLOUT))
 			{
+				// std::cout << "POLLOUT" << '\n';
 				if (_handleClient(fd, POLLOUT) == -1)
 					removeClient = true;
 			}
 
 			if (!removeClient && (revents & POLLHUP))
 			{
+				// std::cout << "POLLHUP" << '\n';
 				client = _findClient(fd);
 				if (client && client->getState() == Client::CLOSE_CONNECTION)
 					removeClient = true;
@@ -224,6 +230,7 @@ void Connection::_processConnections()
 
 		if (removeClient)
 		{
+			// std::cout << "removeClient" << '\n';
 			_removePollFd(i);
 			continue; // Don't skip the current index on removal
 		}
