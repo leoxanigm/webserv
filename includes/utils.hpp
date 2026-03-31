@@ -3,7 +3,9 @@
 
 namespace utils
 {
-	int setNonBlocking(int fd);
+	int		setNonBlocking(int fd);
+	int		ft_count(const std::string &s, char c);
+	bool	ft_str_is_digits(const std::string& str);
 }
 
 #endif /* UTILS_HPP */

@@ -45,15 +45,16 @@ class HTTPRequest
 		std::string							_error;
 
 		// POST request specific datas
-		unsigned int						_contentLength;	// We are not managing Transfer-Encoding
-		std::map<std::string, std::string>	_contentType;
+		std::string							_transfert_encoding;
+		int									_contentLength;
+		std::map<std::string, std::string>	_contentType;  // REFACTORED : <type, charset> : <application/x-www-form-urlencoded, UTF-8>
 		std::string							_body;
 
 		bool		parseMethodToken(const std::string &methodToken);
 		bool		parseRequestLine(const std::string &line);
-		void		parseAcceptLanguage(const std::string &value);
-		void		parseContentType(const std::string &value);
-		void		parseAcceptHeader(const std::string &value);
+		bool		parseAcceptLanguage(const std::string &value);
+		bool		parseContentType(const std::string &value);
+		bool		parseAcceptHeader(const std::string &value);
 		bool		parseHeaderLine(const std::string &line);
 		void		parseRaw(const std::string &raw);
 		void		parseContentLength(const std::string &value);
@@ -83,7 +84,10 @@ class HTTPRequest
 		void		setUserAgent(const std::string &agent);
 		const std::string	&getUserAgent() const;
 
-		void		setBody(const std::string &agent);
+		void		setTransfertEncoding(const std::string &encoding);
+		const std::string	&getTransfertEncoding() const;
+
+		void		setBody(const std::string &body);
 		const std::string	&getBody() const;
 
 		void		setLanguages(const std::map<std::string, float> &languages);
@@ -92,11 +96,11 @@ class HTTPRequest
 		void		setAccept(const std::map<std::string, std::string> &accept);
 		const std::map<std::string, std::string>	&getAccept() const;
 
-		void		setContentType(const std::map<std::string, std::string> &accept);
+		void		setContentType(const std::map<std::string, std::string> &content);
 		const std::map<std::string, std::string>	&getContentType() const;
 
-		void		setContentLength(const unsigned int &length);
-		const unsigned int	&getContentLength() const;
+		void		setContentLength(const int &length);
+		const int	&getContentLength() const;
 };
 
 #endif

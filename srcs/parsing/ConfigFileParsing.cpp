@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/26 09:44:07 by zalemu           ###   ########.fr       */
+/*   Updated: 2026/03/26 12:41:57 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,6 +134,20 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf)
 			else if (tokens[i] == "index" && i + 2 < tokens.size() && tokens[i + 2] == ";")
 			{
                 current_location.index = tokens[i + 1];
+                i += 2;
+            }
+			else if (tokens[i] == "cgi_php" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+			{
+                current_location.is_cgi = true;
+                current_location.cgi_type = PHP;
+                current_location.cgi_location = tokens[i + 1];
+                i += 2;
+            }
+			else if (tokens[i] == "cgi_python" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+			{
+                current_location.is_cgi = true;
+                current_location.cgi_type = PYTHON;
+                current_location.cgi_location = tokens[i + 1];
                 i += 2;
             }
 			else if (tokens[i] == "autoindex" && i + 2 < tokens.size() && tokens[i + 2] == ";")
