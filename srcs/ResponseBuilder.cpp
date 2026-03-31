@@ -1,4 +1,7 @@
+#include <ctime>
+#include <cstring>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <errno.h>
 
@@ -52,17 +55,37 @@ void ResponseBuilder::_directoryListing()
 	}
 
 	struct dirent *dirIt = 0;
+	struct stat statBuff;
+	struct std::tm *tm;
+	char dateStr[256];
+	std::string filePath;
 	while ((dirIt = readdir(directory)) != 0)
 	{
-		std::cout << dirIt->d_name << " " << dirIt->d_type << " " << dirIt->d_reclen << '\n';
+		if (std::strcmp(dirIt->d_name, ".") == 0 ||
+			std::strcmp(dirIt->d_name, "..") == 0)
+			continue;
+
+		filePath = fullPath + std::string(dirIt->d_name);
+		if (stat(filePath.c_str(), &statBuff) == -1)
+			continue;
+
+		tm = std::localtime(&statBuff.st_mtime);
+		std::strftime(dateStr, sizeof(dateStr), "%Y-%m-%d %H:%M", tm);
+
+		std::cout << dirIt->d_name << " "
+				  << dateStr << " ";
+
+		if (S_ISREG(statBuff.st_mode)) // If regular file, show size
+			std::cout << static_cast<float>(statBuff.st_size) / 1000 << "K\n";
+		else
+			std::cout << "-\n";
 	}
 
-	// .  24
-	// ..  24
-	// text.txt 32
-	// file.pdf 32
-	// audio.mp3 32
-	// video.mp4 32
+	// text.txt 2026-03-27 12:25 0K
+	// file.pdf 2026-03-27 12:25 0K
+	// audio.mp3 2026-03-27 12:26 0K
+	// video.mp4 2026-03-27 13:22 25.814K
+	// folder 2026-03-27 13:52 -
 
 	closedir(directory);
 	// std::string response;
