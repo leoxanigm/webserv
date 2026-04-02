@@ -43,7 +43,7 @@ class HTTPRequest
 		std::map<std::string, std::string>	_accept;
 		bool								_valid;
 		bool								_complete;
-		std::string							_error;
+		unsigned int						_error;
 
 		// POST request specific datas
 		std::string							_transfert_encoding;
@@ -69,7 +69,7 @@ class HTTPRequest
 
 		bool								isValid() const;
 		bool								isComplete() const;
-		const std::string					&getError() const;
+		const unsigned int					&getError() const;
 
 		void		setMethod(t_http_methods method);
 		t_http_methods	getMethod() const;

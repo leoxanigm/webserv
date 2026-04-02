@@ -16,7 +16,7 @@
 
 #include <climits>
 
-HTTPRequest::HTTPRequest() : _method(GET), _valid(true), _complete(true), _error("")
+HTTPRequest::HTTPRequest() : _method(GET), _valid(true), _complete(true), _error(0)
 {}
 
 HTTPRequest::HTTPRequest(const std::string &raw) : _method(GET),
@@ -81,7 +81,7 @@ bool	HTTPRequest::isComplete() const
 	return (_complete);
 }
 
-const std::string	&HTTPRequest::getError() const
+const unsigned int	&HTTPRequest::getError() const
 {
 	return (_error);
 }
@@ -206,13 +206,13 @@ bool	HTTPRequest::parseRequestLine(const std::string &line)
 	std::string::size_type s1 = line.find(' ');
 	if (utils::ft_count(line, ' ') > 2 || s1 == std::string::npos)
 	{
-		_error = "invalid request line";
+		_error = 400;  // invalid request line
 		return (false);
 	}
 	std::string::size_type s2 = line.find(' ', s1 + 1);
 	if (s2 == std::string::npos)
 	{
-		_error = "invalid request line";
+		_error = 400;  // invalid request line
 		return (false);
 	}
 
@@ -222,22 +222,22 @@ bool	HTTPRequest::parseRequestLine(const std::string &line)
 
 	if (methodToken.empty() || target.empty() || version.empty())
 	{
-		_error = "invalid request line";
+		_error = 400;  // invalid request line
 		return (false);
 	}
 	if (!parseMethodToken(methodToken))
 	{
-		_error = "unsupported method";
+		_error = 405;  // unsupported method
 		return (false);
 	}
 	if (target[0] != '/')
 	{
-		_error = "invalid request target";
+		_error = 404;  // invalid request target
 		return (false);
 	}
 	if (version.compare(0, 5, "HTTP/") != 0)
 	{
-		_error = "invalid http version";
+		_error = 422;  // invalid http version
 		return (false);
 	}
 
@@ -392,7 +392,7 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 	std::string::size_type sep = line.find(':');
 	if (sep == std::string::npos)
 	{
-		_error = "invalid header line";
+		_error = 400;  // invalid header line
 		return (false);
 	}
 
@@ -400,7 +400,7 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 	std::string value = trim(line.substr(sep + 1));
 	if (key.empty())
 	{
-		_error = "invalid header key";
+		_error = 400;  // invalid header key
 		return (false);
 	}
 
@@ -410,7 +410,7 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 	{
 		if (!_host.empty())
 		{
-			_error = "duplicate host header";
+			_error = 400;  // duplicate host header
 			return (false);
 		}
 		_host = value;
@@ -438,7 +438,7 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 	{
 		if (_contentLength != 0)
 		{
-			_error = "duplicate content-length header";
+			_error = 400;  // duplicate host header
 			return (false);
 		}
 		parseContentLength(value);
@@ -462,7 +462,7 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 	{
 		_valid = false;
 		_complete = false;
-		_error = "missing header/body separator";
+		_error = 400;  // missing header/body separator
 		return ;
 	}
 
@@ -499,13 +499,13 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 	if (_host.empty())
 	{
 		_valid = false;
-		_error = "missing host header line";
+		_error = 400;  // missing header/body separator
 		return ;
 	}
 	if (!_transfert_encoding.empty() && _contentLength > 0)
 	{
 		_valid = false;
-		_error = "both content-length and transfer-encoding are set";
+		_error = 400;  // both content-length and transfer-encoding are set
 		return ;
 	}
 
@@ -530,7 +530,7 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 					_valid = false;
 					_complete = false;
 					std::cout << "complete > " << _complete << std::endl;
-					_error = "invalid chunked encoding";
+					_error = 400;  // invalid chunked encoding
 					return ;
 				}
 			}
@@ -543,7 +543,7 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 		if (length != 0)
 		{
 			_valid = false;
-			_error = "invalid chunked body";
+			_error = 400;  // invalid chunked body
 			return ;
 		}
 	}
@@ -553,7 +553,7 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 		if (_body.length() != static_cast<unsigned int>(_contentLength))
 		{
 			_valid = false;
-			_error = "content length is not the same length as the actual body";
+			_error = 400;  // content length is not the same length as the actual body
 			return ;
 		}
 	}
@@ -561,6 +561,6 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 	if (_method == GET && (!_body.empty() || !_contentType.empty()))
 	{
 		_valid = false;
-		_error = "body in a GET request";
+		_error = 400;  // body in a GET request
 	}
 }

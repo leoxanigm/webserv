@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/02 13:25:39 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/02 18:13:44 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -154,6 +154,18 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf)
 			{
                 current_location.autoindex = (tokens[i + 1] == "on");
                 i += 2;
+            }
+			else if (tokens[i] == "methods")
+			{
+                int j = 1;
+                while (i + j < tokens.size())
+                {
+                    if (tokens[i + j] == ";")
+                        break ;
+                    current_location.allowed_methods.push_back(tokens[i + j]);
+                    j++;
+                }
+                i += j;
             }
             else if (tokens[i] == "return" && i + 3 < tokens.size() && tokens[i + 3] == ";")
             {

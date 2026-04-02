@@ -10,6 +10,7 @@
 #include "../includes/HTTPError.hpp"
 #include "../includes/parsing/HTTPRequestParser.hpp"
 #include "../includes/ResponseBuilder.hpp"
+#include "../includes/cgi.hpp"
 
 #include "../includes/tests.hpp"
 
@@ -114,7 +115,8 @@ int Client::handleWrite(int fd)
 		ConfigFileParsing config("default.conf");
 		ResponseBuilder responseBuilder(req, config);
 
-		const std::string &test = responseBuilder.getBody();
+		// const std::string &test = responseBuilder.getBody();
+		const std::string &test = call_php_cgi(req, "./www/html/idx.php");
 
 		std::ostringstream response;
 		response << "HTTP/1.1 200 OK\r\n"
@@ -124,6 +126,7 @@ int Client::handleWrite(int fd)
 				 << test;
 
 		const std::string &res = response.str();
+		std::cout << res << std::endl << std::endl;
 		send_res = send(fd, res.c_str(), res.length(), 0);
 		if (send_res == -1)
 		{

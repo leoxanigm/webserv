@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/02 13:21:36 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/02 18:05:17 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,15 +65,16 @@ typedef enum	e_CGIs
 
 typedef struct	s_locations
 {
-	std::string		location;
-	bool			autoindex;
-	bool			is_cgi;
-	t_CGIs			cgi_type;
-	std::string		cgi_location;
-	unsigned int	return_code;
-	std::string		return_location;
-	std::string		root;
-	std::string		index;
+	std::string				location;
+	bool					autoindex;
+	bool					is_cgi;
+	t_CGIs					cgi_type;
+	std::string				cgi_location;
+	unsigned int			return_code;
+	std::string				return_location;
+	std::string				root;
+	std::string				index;
+	std::list<std::string>	allowed_methods;
 	// Did I miss some ?
 	// redirection
 	// cgi enabled and related cgi paths

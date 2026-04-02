@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/25 13:36:19 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/02 13:23:09 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/02 18:13:30 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,14 @@ void display_parsed_conf_file(const ConfigFileParsing &config)
 			std::cout << "return_location : " << it2->return_location << std::endl;
 			std::cout << "root : " << it2->root << std::endl;
 			std::cout << "index : " << it2->index << std::endl << std::endl;
+
+			std::cout << "Allowed methods : ";
+			std::list<std::string>::iterator it3;
+			for (it3 = it2->allowed_methods.begin(); it3 != it2->allowed_methods.end(); ++it3)
+			{
+				std::cout << it3->c_str() << " ";
+			}
+			std::cout << std::endl;
 		}
 
 		std::cout << "Status codes : " << std::endl;
