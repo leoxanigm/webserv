@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/29 19:38:30 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/02 13:21:36 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,6 +71,7 @@ typedef struct	s_locations
 	t_CGIs			cgi_type;
 	std::string		cgi_location;
 	unsigned int	return_code;
+	std::string		return_location;
 	std::string		root;
 	std::string		index;
 	// Did I miss some ?
@@ -84,6 +85,7 @@ typedef struct	s_locations
 		cgi_type(NONE),
 		cgi_location(""),
 		return_code(200),
+		return_location("/"),
 		root("./"),
 		index("index.html") {}
 }	t_locations;

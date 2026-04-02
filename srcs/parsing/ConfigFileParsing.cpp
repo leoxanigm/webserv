@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/26 12:41:57 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/02 13:25:39 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -155,10 +155,11 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf)
                 current_location.autoindex = (tokens[i + 1] == "on");
                 i += 2;
             }
-			else if (tokens[i] == "return" && i + 2 < tokens.size() && tokens[i + 2] == ";")
-			{
+            else if (tokens[i] == "return" && i + 3 < tokens.size() && tokens[i + 3] == ";")
+            {
                 current_location.return_code = std::atoi(tokens[i + 1].c_str());
-                i += 2;
+                current_location.return_location = tokens[i + 2];
+                i += 3;
             }
 			else
 			{

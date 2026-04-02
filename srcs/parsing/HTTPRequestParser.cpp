@@ -16,11 +16,12 @@
 
 #include <climits>
 
-HTTPRequest::HTTPRequest() : _method(GET), _valid(true), _error("")
+HTTPRequest::HTTPRequest() : _method(GET), _valid(true), _complete(true), _error("")
 {}
 
 HTTPRequest::HTTPRequest(const std::string &raw) : _method(GET),
 													_valid(true),
+													_complete(true),
 													_contentLength(0)
 {
 	parseRaw(raw);
@@ -47,6 +48,7 @@ HTTPRequest	&HTTPRequest::operator=(const HTTPRequest &other)
 	_contentLength = other._contentLength;
 	_body = other._body;
 	_valid = other._valid;
+	_complete = other._complete;
 	_error = other._error;
 	return (*this);
 }
@@ -72,6 +74,11 @@ void	HTTPRequest::setRequestTarget(const std::string &target)
 bool	HTTPRequest::isValid() const
 {
 	return (_valid);
+}
+
+bool	HTTPRequest::isComplete() const
+{
+	return (_complete);
 }
 
 const std::string	&HTTPRequest::getError() const
@@ -323,8 +330,6 @@ bool	HTTPRequest::parseAcceptHeader(const std::string &value)
 }
 
 bool	HTTPRequest::parseContentType(const std::string &value)
-
-
 {
 	std::string::size_type semi = value.find(';');
 	std::string mediaType = trim(value.substr(0, semi));
@@ -364,8 +369,6 @@ bool	HTTPRequest::parseContentType(const std::string &value)
 }
 
 void	HTTPRequest::parseContentLength(const std::string &value)
-
-
 {
 	if (!utils::ft_str_is_digits(value))
 	{
@@ -401,8 +404,7 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 		return (false);
 	}
 
-	std::string keyLower = key;
-	std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), ::tolower);
+	std::string keyLower = toLower(key);
 
 	if (keyLower == "host")
 	{
@@ -454,13 +456,12 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 		The raw request formated with CRLF at the end on each line.
 */
 void	HTTPRequest::parseRaw(const std::string &raw)
-
-
 {
 	std::string::size_type body_begin = raw.find("\r\n\r\n");
 	if (body_begin == std::string::npos)
 	{
 		_valid = false;
+		_complete = false;
 		_error = "missing header/body separator";
 		return ;
 	}
@@ -495,8 +496,6 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 		}
 	}
 
-	_body = raw.substr(body_begin + 4);
-
 	if (_host.empty())
 	{
 		_valid = false;
@@ -509,21 +508,56 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 		_error = "both content-length and transfer-encoding are set";
 		return ;
 	}
+
+	std::istringstream	tmpBody(raw.substr(body_begin + 4));
+	std::string			bodyLine;
+	int					lineNum = 0;
+	int					length = -1;
+
+	// GET /index.html HTTP/1.1\r\nHost: localhost\r\nAccept: text/html\r\nTransfer-Encoding: chunked\r\n\r\n7\r\nWelcome\r\n1c\r\nto Mozilla Developer Network\r\n0\r\n\r\n
 	if (toLower(_transfert_encoding) == "chunked")
 	{
-		if (_body.find("\r\n0\r\n\r\n") == std::string::npos)
+		while (std::getline(tmpBody, bodyLine) && length != 0)
+		{
+			if (!bodyLine.empty() && bodyLine[bodyLine.size() - 1] == '\r')
+				bodyLine.erase(bodyLine.size() - 1);
+			if (lineNum % 2 == 0)
+			{
+				char *end;
+				length = std::strtol(bodyLine.c_str(), &end, 16);
+				if (end == bodyLine.c_str() || *end != '\0' || length < 0)
+				{
+					_valid = false;
+					_complete = false;
+					std::cout << "complete > " << _complete << std::endl;
+					_error = "invalid chunked encoding";
+					return ;
+				}
+			}
+			else if (lineNum % 2 == 1)
+			{
+				_body += bodyLine;
+			}
+			lineNum++;
+		}
+		if (length != 0)
 		{
 			_valid = false;
 			_error = "invalid chunked body";
+			return ;
 		}
-		return ;
 	}
-	if (_body.length() != static_cast<unsigned int>(_contentLength))
+	else
 	{
-		_valid = false;
-		_error = "content length is not the same length as the actual body";
-		return ;
+		_body = tmpBody.str();
+		if (_body.length() != static_cast<unsigned int>(_contentLength))
+		{
+			_valid = false;
+			_error = "content length is not the same length as the actual body";
+			return ;
+		}
 	}
+
 	if (_method == GET && (!_body.empty() || !_contentType.empty()))
 	{
 		_valid = false;

@@ -11,6 +11,8 @@
 #include "../includes/parsing/HTTPRequestParser.hpp"
 #include "../includes/ResponseBuilder.hpp"
 
+#include "../includes/tests.hpp"
+
 Client::Client(int connFd, const ConfigFileParsing::location_list_t &locations)
 	: _locations(locations), _connFd(connFd)
 {
@@ -51,6 +53,7 @@ int Client::handleRead(int fd)
 	ssize_t n = recv(fd, buff, sizeof(buff), 0);
 	_inBuffer.append(buff, n);
 	_req = HTTPRequest(_inBuffer);
+	display_parsed_request(_req);
 
 	// if (_req.isValid())
 	// {

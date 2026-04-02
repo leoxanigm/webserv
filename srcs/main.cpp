@@ -22,11 +22,6 @@ void sigIntHandler(int sig)
 
 int main(int argc, char const *argv[])
 {
-
-	// testHttpParsing();
-
-	// return (0);
-
 	signal(SIGINT, sigIntHandler);
 
 	if (argc != 2)
