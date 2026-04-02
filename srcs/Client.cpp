@@ -115,8 +115,8 @@ int Client::handleWrite(int fd)
 		ConfigFileParsing config("default.conf");
 		ResponseBuilder responseBuilder(req, config);
 
-		// const std::string &test = responseBuilder.getBody();
-		const std::string &test = call_php_cgi(req, "./www/html/idx.php");
+		const std::string &test = responseBuilder.getBody();
+		// const std::string &test = call_php_cgi(req, "./www/html/idx.php");
 
 		std::ostringstream response;
 		response << "HTTP/1.1 200 OK\r\n"
