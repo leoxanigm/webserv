@@ -228,7 +228,7 @@ bool	HTTPRequest::parseRequestLine(const std::string &line)
 		_error = "invalid request target";
 		return (false);
 	}
-	if (version.compare(0, 5, "HTTP/") != 0)
+	if (version.compare("HTTP/1.0") != 0 && version.compare("HTTP/1.1") != 0)
 	{
 		_error = "invalid http version";
 		return (false);

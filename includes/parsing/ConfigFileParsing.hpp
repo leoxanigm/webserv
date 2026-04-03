@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
+/*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/03/29 19:38:30 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/02 17:47:47 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,10 @@
 # include <iostream>
 # include <sstream>
 # include <fstream>
+
+// TODO:
+// config file error checking
+// List of accepted HTTP methods for the route.
 
 typedef struct s_HTTPStatusCodePages
 {
@@ -70,12 +74,9 @@ typedef struct	s_locations
 	bool			is_cgi;
 	t_CGIs			cgi_type;
 	std::string		cgi_location;
-	unsigned int	return_code;
+	int				return_code;
 	std::string		root;
 	std::string		index;
-	// Did I miss some ?
-	// redirection
-	// cgi enabled and related cgi paths
 
 	s_locations() : 
 		location("/"),
@@ -97,7 +98,7 @@ typedef struct	s_servers
 	std::string				listen_interface;
 	std::string				server_name;
 
-	s_servers() : 
+	s_servers() :
 		is_default_server(false),
 		listen_port("8080"),
 		listen_interface("[::]"), // test custom host (eg, zalemu.42.fr)
@@ -119,6 +120,10 @@ class ConfigFileParsing
 
 		typedef std::list<t_locations> location_list_t;
 		typedef t_locations location_t;
+		typedef std::list<t_servers> server_list_t;
+		typedef t_servers server_t;
+		typedef std::list<t_servers>::const_iterator servers_iterator_t;
+		typedef std::list<t_locations>::const_iterator location_iterator_t;
 		
 		const std::list<t_servers> &getServers(void) const;
 };

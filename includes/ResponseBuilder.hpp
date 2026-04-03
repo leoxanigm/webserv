@@ -8,26 +8,30 @@
 class ResponseBuilder
 {
 public:
-	ResponseBuilder(const HTTPRequest &req, const ConfigFileParsing &config);
+	ResponseBuilder(
+		const HTTPRequest &req, const ConfigFileParsing::server_t &server);
 	~ResponseBuilder();
 
-	const std::string &getBody() const;
+	std::string str() const;
 
 private:
+	ResponseBuilder();
 	ResponseBuilder(const ResponseBuilder &obj);
 	ResponseBuilder &operator=(const ResponseBuilder &obj);
 
-	const HTTPRequest &_req;
-	const ConfigFileParsing &_config;
-	HTTPResponse _res;
+	const HTTPRequest &_request;
+	const ConfigFileParsing::server_t &_server;
+	HTTPResponse _response;
 
-	std::string _body;
-
+	void _processGET(const ConfigFileParsing::location_t *location);
+	void _processPOST(const ConfigFileParsing::location_t *location);
+	void _processDELETE(const ConfigFileParsing::location_t *location);
 	void _directoryListing();
+	const std::string &_getErrorPage(int code) const;
+	const ConfigFileParsing::location_t *_longestPrefixLocationMatch(
+		const std::string &reqLocation) const;
 
 	static std::string _getMimeType(const std::string &path);
 };
-
-
 
 #endif /* RESPONSE_BUILDER_HPP */

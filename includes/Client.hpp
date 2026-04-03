@@ -9,7 +9,7 @@
 class Client
 {
 public:
-	Client(int connFd, const ConfigFileParsing::location_list_t &locations);
+	Client(int connFd, const ConfigFileParsing::server_t &server);
 	~Client();
 
 	enum State
@@ -39,7 +39,7 @@ private:
 	Client(const Client &obj);
 	Client &operator=(const Client &obj);
 
-	const ConfigFileParsing::location_list_t &_locations;
+	const ConfigFileParsing::server_t &_server;
 	HTTPRequest _req;
 
 	int _connFd;

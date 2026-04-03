@@ -11,8 +11,8 @@
 #include "../includes/parsing/HTTPRequestParser.hpp"
 #include "../includes/ResponseBuilder.hpp"
 
-Client::Client(int connFd, const ConfigFileParsing::location_list_t &locations)
-	: _locations(locations), _connFd(connFd)
+Client::Client(int connFd, const ConfigFileParsing::server_t &server)
+	: _server(server), _connFd(connFd)
 {
 	_inBuffer = "";
 	_outBuffer = "";
@@ -102,16 +102,17 @@ int Client::handleWrite(int fd)
 
 	if (_req.isValid())
 	{
+		
 		// std::ifstream file("./www/html/index.html");
 		// std::ostringstream content;
 
 		// content << file.rdbuf();
 
-		HTTPRequest req;
-		ConfigFileParsing config("default.conf");
-		ResponseBuilder responseBuilder(req, config);
+		// HTTPRequest req;
+		// ConfigFileParsing config("default.conf");
+		ResponseBuilder responseBuilder(_req, _server);
 
-		const std::string &test = responseBuilder.getBody();
+		const std::string &test = responseBuilder.str();
 
 		std::ostringstream response;
 		response << "HTTP/1.1 200 OK\r\n"

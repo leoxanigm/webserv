@@ -2,6 +2,7 @@
 #define HTTP_RESPONSE_HPP
 
 #include <string>
+#include <vector>
 #include <map>
 
 #include "./HTTPError.hpp"
@@ -43,6 +44,7 @@ public:
 	void setStatusCode(int code);
 	void setHeader(const std::string &key, const std::string &value);
 	void setBody(const std::string &body);
+	void setBody(const std::vector<char> &body);
 
 	std::string toString() const;
 
