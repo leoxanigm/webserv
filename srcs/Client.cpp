@@ -10,6 +10,9 @@
 #include "../includes/HTTPError.hpp"
 #include "../includes/parsing/HTTPRequestParser.hpp"
 #include "../includes/ResponseBuilder.hpp"
+#include "../includes/cgi.hpp"
+
+#include "../includes/tests.hpp"
 
 Client::Client(int connFd, const ConfigFileParsing::server_t &server)
 	: _server(server), _connFd(connFd)
@@ -51,6 +54,7 @@ int Client::handleRead(int fd)
 	ssize_t n = recv(fd, buff, sizeof(buff), 0);
 	_inBuffer.append(buff, n);
 	_req = HTTPRequest(_inBuffer);
+	display_parsed_request(_req);
 
 	// if (_req.isValid())
 	// {
@@ -122,6 +126,7 @@ int Client::handleWrite(int fd)
 				 << test;
 
 		const std::string &res = response.str();
+		std::cout << res << std::endl << std::endl;
 		send_res = send(fd, res.c_str(), res.length(), 0);
 		if (send_res == -1)
 		{

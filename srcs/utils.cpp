@@ -57,3 +57,11 @@ std::vector<char> utils::readFile(const std::string &path)
 
 	return (readData);
 }
+
+bool utils::ft_endswith(const std::string &fullString, const std::string &ending)
+{
+    if (fullString.length() >= ending.length())
+		return (fullString.compare(fullString.length() - ending.length(), ending.length(), ending) == 0);
+    else
+        return (false);
+}

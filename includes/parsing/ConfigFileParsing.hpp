@@ -6,7 +6,7 @@
 /*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/02 17:47:47 by zalemu           ###   ########.fr       */
+/*   Updated: 2026/04/03 12:55:34 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,14 +69,19 @@ typedef enum	e_CGIs
 
 typedef struct	s_locations
 {
-	std::string		location;
-	bool			autoindex;
-	bool			is_cgi;
-	t_CGIs			cgi_type;
-	std::string		cgi_location;
-	int				return_code;
-	std::string		root;
-	std::string		index;
+	std::string				location;
+	bool					autoindex;
+	bool					is_cgi;
+	t_CGIs					cgi_type;
+	std::string				cgi_location;
+	unsigned int			return_code;
+	std::string				return_location;
+	std::string				root;
+	std::string				index;
+	std::list<std::string>	allowed_methods;
+	// Did I miss some ?
+	// redirection
+	// cgi enabled and related cgi paths
 
 	s_locations() : 
 		location("/"),
@@ -85,6 +90,7 @@ typedef struct	s_locations
 		cgi_type(NONE),
 		cgi_location(""),
 		return_code(200),
+		return_location("/"),
 		root("./"),
 		index("index.html") {}
 }	t_locations;

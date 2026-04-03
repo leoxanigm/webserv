@@ -1,14 +1,18 @@
-#include <unistd.h>
-#include <sys/wait.h>
-#include <algorithm>
-#include <cstring>
-#include <iostream>
-#include <vector>
-#include <sstream>
-#include "../../includes/parsing/HTTPRequestParser.hpp"
-#include "../../includes/parsing/ConfigFileParsing.hpp"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   php.cpp                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/04/02 15:41:14 by mathboye          #+#    #+#             */
+/*   Updated: 2026/04/02 15:49:28 by mathboye         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-std::string call_php_cgi(HTTPRequest request, t_locations loc)
+#include "../../includes/cgi.hpp"
+
+std::string call_php_cgi(HTTPRequest request, std::string loc)
 {
 	int pipe_in[2];
 	int pipe_out[2];
@@ -37,7 +41,7 @@ std::string call_php_cgi(HTTPRequest request, t_locations loc)
 		char *argv[] = {(char *)"php-cgi", NULL};
 		
 		std::string gateway_interface = "GATEWAY_INTERFACE=CGI/1.1";
-		std::string script_filename = "SCRIPT_FILENAME=" + loc.cgi_location;
+		std::string script_filename = "SCRIPT_FILENAME=" + loc;
 		std::string redirect_status = "REDIRECT_STATUS=200";
 		std::string request_method;
 		std::string content_type;
@@ -56,14 +60,15 @@ std::string call_php_cgi(HTTPRequest request, t_locations loc)
 		envp.push_back((char *)script_filename.c_str());
 		envp.push_back((char *)redirect_status.c_str());
 		envp.push_back((char *)request_method.c_str());
-		
 		if (request.getMethod() == POST)
 		{
 			std::map<std::string, std::string> content_type_map = request.getContentType();
 			content_type = "CONTENT_TYPE=" + content_type_map.begin()->first + "/" + content_type_map.begin()->second;
 			envp.push_back((char *)content_type.c_str());
 			
-			content_length = "CONTENT_LENGTH=" + std::to_string(request.getContentLength());
+			std::stringstream ss;
+			ss << request.getContentLength();
+			content_length = "CONTENT_LENGTH=" + ss.str();
 			envp.push_back((char *)content_length.c_str());
 		}
 		else if (request.getMethod() == GET)
@@ -83,9 +88,7 @@ std::string call_php_cgi(HTTPRequest request, t_locations loc)
 		close(pipe_out[1]);
 		
 		if (request.getMethod() == POST && !request.getBody().empty())
-		{
 			write(pipe_in[1], request.getBody().c_str(), request.getBody().length());
-		}
 		close(pipe_in[1]);
 		
 		std::stringstream output;
@@ -93,9 +96,7 @@ std::string call_php_cgi(HTTPRequest request, t_locations loc)
 		ssize_t bytes_read;
 		
 		while ((bytes_read = read(pipe_out[0], buffer, sizeof(buffer))) > 0)
-		{
 			output.write(buffer, bytes_read);
-		}
 		close(pipe_out[0]);
 		
 		int status;

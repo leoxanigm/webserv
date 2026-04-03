@@ -6,7 +6,7 @@
 /*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/02 14:31:16 by zalemu           ###   ########.fr       */
+/*   Updated: 2026/04/03 12:58:32 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -155,10 +155,23 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf)
                 current_location.autoindex = (tokens[i + 1] == "on");
                 i += 2;
             }
-            else if (tokens[i] == "return" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+			else if (tokens[i] == "methods")
+			{
+                int j = 1;
+                while (i + j < tokens.size())
+                {
+                    if (tokens[i + j] == ";")
+                        break ;
+                    current_location.allowed_methods.push_back(tokens[i + j]);
+                    j++;
+                }
+                i += j;
+            }
+            else if (tokens[i] == "return" && i + 3 < tokens.size() && tokens[i + 3] == ";")
             {
                 current_location.return_code = std::atoi(tokens[i + 1].c_str());
-                i += 2;
+                current_location.return_location = tokens[i + 2];
+                i += 3;
             }
             else
             {
