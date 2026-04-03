@@ -43,7 +43,7 @@ private:
 	const ConfigFileParsing &_config;
 
 	// Associative map for socket fd and corresponding config
-	std::map<int, const ConfigFileParsing::location_list_t *> _sockets;
+	std::map<int, const ConfigFileParsing::server_t *> _sockets;
 
 	std::vector<struct pollfd> _pollFds;
 
@@ -58,7 +58,7 @@ private:
 	void _setFdPollEvent(int fd, short event);
 
 	void _addPollFd(int fd, short event);
-	void _addClient(int fd, const ConfigFileParsing::location_list_t *locations);
+	void _addClient(int fd, const ConfigFileParsing::server_t *server);
 	Client *_findClient(int fd) const;
 	void _closeClientFd(Client *client, FdType type);
 	void _removeClient(int fd);

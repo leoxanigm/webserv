@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/02 23:05:03 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/03 13:57:26 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,10 @@
 # include <iostream>
 # include <sstream>
 # include <fstream>
+
+// TODO:
+// config file error checking
+// List of accepted HTTP methods for the route.
 
 typedef struct s_HTTPStatusCodePages
 {
@@ -124,6 +128,10 @@ class ConfigFileParsing
 
 		typedef std::list<t_locations> location_list_t;
 		typedef t_locations location_t;
+		typedef std::list<t_servers> server_list_t;
+		typedef t_servers server_t;
+		typedef std::list<t_servers>::const_iterator servers_iterator_t;
+		typedef std::list<t_locations>::const_iterator location_iterator_t;
 		
 		const std::list<t_servers> &getServers(void) const;
 };

@@ -33,6 +33,11 @@ void HTTPResponse::setBody(const std::string &body)
 	_body = body;
 }
 
+void HTTPResponse::setBody(const std::vector<char> &body)
+{
+	_body.insert(_body.end(), body.begin(), body.end());
+}
+
 std::string HTTPResponse::toString() const
 {
 	std::ostringstream header;
@@ -61,7 +66,6 @@ std::string HTTPResponse::_statusLineFromCode(void) const
 	std::ostringstream statusLine;
 
 	statusLine << _httpVersion << " ";
-	statusLine << _statusCode << " ";
 
 	if (_statusCode >= 400 && _statusCode <= 505) // error
 	{

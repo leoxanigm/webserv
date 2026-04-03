@@ -10,20 +10,78 @@
 #include "../includes/HTTPError.hpp"
 #include "../includes/parsing/HTTPRequestParser.hpp"
 #include "../includes/parsing/ConfigFileParsing.hpp"
+#include "../includes/utils.hpp"
 
-ResponseBuilder::ResponseBuilder(const HTTPRequest &req, const ConfigFileParsing &config)
-	: _req(req), _config(config)
+ResponseBuilder::ResponseBuilder(
+	const HTTPRequest &req, const ConfigFileParsing::server_t &server)
+	: _request(req), _server(server)
 {
-	_directoryListing();
+	// TODO:
+	// request error checking
+
+	const ConfigFileParsing::location_t *location = 0;
+	location = _longestPrefixLocationMatch(_request.getRequestTarget());
+	if (location == 0)
+	{
+		_response.setStatusCode(404);
+		// _res.setBody(_pathToBody(_getErrorPage(404)));
+	}
+	else
+	{
+		if (_request.getMethod() == GET)
+			_processGET(location);
+		if (_request.getMethod() == POST)
+			_processPOST(location);
+		if (_request.getMethod() == DELETE)
+			_processDELETE(location);
+	}
 }
 
-ResponseBuilder::~ResponseBuilder()
+ResponseBuilder::~ResponseBuilder() {}
+
+std::string ResponseBuilder::str() const
 {
+	return (_response.toString());
 }
 
-const std::string &ResponseBuilder::getBody() const
+void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 {
-	return (_body);
+	if (location->is_cgi)
+	{
+	}
+	else
+	{
+		if (_request.getRequestTarget()[_request.getRequestTarget().size() - 1] == '/')
+		{
+			if (location->autoindex)
+				_directoryListing();
+			else
+			{
+				std::cout << "here" << '\n';
+				_response.setStatusCode(HTTPError::FORBIDDEN);
+				try
+				{
+					_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
+				}
+				catch (const std::exception &e)
+				{
+					// For error pages, not being able to read the file is unrecoverable.
+					std::cerr << "Error setting body in ResponseBuilder::_processGET: "
+							  << e.what() << '\n';
+				}
+			}
+		}
+	}
+}
+
+void ResponseBuilder::_processPOST(const ConfigFileParsing::location_t *location)
+{
+	(void) location;
+}
+
+void ResponseBuilder::_processDELETE(const ConfigFileParsing::location_t *location)
+{
+	(void) location;
 }
 
 void ResponseBuilder::_directoryListing()
@@ -31,11 +89,11 @@ void ResponseBuilder::_directoryListing()
 	// location should have been properly constructed here.
 	// For example, if url was /files and in config if /files was
 	// routed to ./www/html/files,
-	// _req.getReqLocation() == /files/
-	// _req.getFullPath() == ./www/html/files/
+	// _request.getReqLocation() == /files/
+	// _request.getFullPath() == ./www/html/files/
 	// This make sure we separate error checking concern from response
-	// const std::string &reqLocation _req.getReqLocation(); // TODO
-	// const std::string &fullPath _req.getFullPath(); // TODO
+	// const std::string &reqLocation _request.getReqLocation(); // TODO
+	// const std::string &fullPath _request.getFullPath(); // TODO
 
 	const std::string reqLocation = "/files/";
 	const std::string fullPath = "./www/html/files/";
@@ -51,16 +109,16 @@ void ResponseBuilder::_directoryListing()
 	if (!directory)
 	{
 		if (errno == EACCES || errno == ENOTDIR)
-			_res.setStatusCode(HTTPError::FORBIDDEN);
-		// _res.setBody(_readFile(_config.getDefaultPage(HTTPError::FORBIDDEN)));
+			_response.setStatusCode(HTTPError::FORBIDDEN);
+		// _response.setBody(_readFile(_config.getDefaultPage(HTTPError::FORBIDDEN)));
 		else
-			_res.setStatusCode(HTTPError::INTERNAL_SERVER_ERROR);
-		// _res.setBody(_readFile(_config.getDefaultPage(HTTPError::FORBIDDEN)));
+			_response.setStatusCode(HTTPError::INTERNAL_SERVER_ERROR);
+		// _response.setBody(_readFile(_config.getDefaultPage(HTTPError::FORBIDDEN)));
 
 		return;
 	}
 
-	std::string header = "Index of " + reqLocation;
+	std::string title = "Index of " + reqLocation;
 
 	std::string parentDir;
 	if (reqLocation[reqLocation.size() - 1] == '/')
@@ -73,8 +131,8 @@ void ResponseBuilder::_directoryListing()
 		parentDir = "/";
 
 	std::ostringstream output;
-	output << "<!DOCTYPE html><html><head><title>" << header
-		   << "</title></head><body><h1>" << header
+	output << "<!DOCTYPE html><html><head><title>" << title
+		   << "</title></head><body><h1>" << title
 		   << "</h1><table><tr><th>Name</th><th>Last modified</th>"
 		   << "<th>Size</th></tr><tr><th colspan=\"3\"><hr /></th></tr>"
 		   << "<tr><td><a href=\"" << parentDir << "\">Parent Directory</a></td>"
@@ -112,9 +170,78 @@ void ResponseBuilder::_directoryListing()
 	}
 
 	output << "</table></body></html>";
-	_body = output.str();
+	_response.setBody(output.str());
 
 	closedir(directory);
+}
+
+const std::string &ResponseBuilder::_getErrorPage(int code) const
+{
+	switch (code)
+	{
+	case 200:
+		return (_server.error_pages.OK);
+	case 204:
+		return (_server.error_pages.NoContent);
+	case 301:
+		return (_server.error_pages.MovedPermanently);
+	case 302:
+		return (_server.error_pages.MovedTemporarily);
+	case 400:
+		return (_server.error_pages.BadRequest);
+	case 401:
+		return (_server.error_pages.Unauthorized);
+	case 403:
+		return (_server.error_pages.Forbidden);
+	case 404:
+		return (_server.error_pages.NotFound);
+	case 500:
+		return (_server.error_pages.InternalServerError);
+	case 501:
+		return (_server.error_pages.NotImplemented);
+	case 502:
+		return (_server.error_pages.BadGateway);
+	case 503:
+		return (_server.error_pages.ServiceUnavailable);
+	}
+
+	return (_server.error_pages.InternalServerError);
+}
+
+const ConfigFileParsing::location_t *ResponseBuilder::_longestPrefixLocationMatch(
+	const std::string &reqLocation) const
+{
+
+	const ConfigFileParsing::location_t *location = 0;
+	std::size_t longestMatch = 0, slashLoc = 0, currMatch, i;
+	ConfigFileParsing::location_iterator_t it = _server.locations.begin();
+	std::string confLocation;
+
+	for (; it != _server.locations.end(); it++)
+	{
+		currMatch = i = 0;
+		confLocation = it->location[it->location.size() - 1] == '/'
+						   ? it->location
+						   : it->location + "/";
+
+		while (i < reqLocation.size() && i < confLocation.size() && reqLocation[i] == confLocation[i])
+		{
+			if (reqLocation[i] == '/')
+				slashLoc = i + 1;
+			currMatch++;
+			i++;
+		}
+
+		if ((currMatch > longestMatch && i == it->location.size() && i == reqLocation.size()) // Exact match
+			|| slashLoc > longestMatch														  // Last slash location
+		)
+		{
+			longestMatch = currMatch;
+			location = &(*it);
+		}
+	}
+
+	return (location);
 }
 
 std::string ResponseBuilder::_getMimeType(const std::string &path)

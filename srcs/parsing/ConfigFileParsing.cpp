@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/03 13:11:47 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/03 14:02:09 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 #include <vector>
 #include <cstdlib>
 
-std::vector<std::string> tokenize(const std::string& str)
+std::vector<std::string> tokenize(const std::string &str)
 {
     std::vector<std::string> tokens;
     std::string token;
@@ -25,51 +25,51 @@ std::vector<std::string> tokenize(const std::string& str)
     char quote_char = 0;
 
     for (size_t i = 0; i < str.length(); ++i)
-	{
+    {
         char c = str[i];
 
         if (c == '#')
-		{
+        {
             while (i < str.length() && str[i] != '\n')
-				++i;
+                ++i;
             continue;
         }
         if (in_quotes)
-		{
+        {
             token += c;
             if (c == quote_char)
-			{
+            {
                 in_quotes = false;
                 tokens.push_back(token);
                 token.clear();
             }
         }
-		else
-		{
+        else
+        {
             if (c == '"' || c == '\'')
-			{
+            {
                 in_quotes = true;
                 quote_char = c;
                 token += c;
             }
-			else if (std::isspace(c))
-			{
+            else if (std::isspace(c))
+            {
                 if (!token.empty())
-				{
+                {
                     tokens.push_back(token);
                     token.clear();
                 }
             }
-			else if (c == '{' || c == '}' || c == ';')
-			{
+            else if (c == '{' || c == '}' || c == ';')
+            {
                 if (!token.empty())
-				{
+                {
                     tokens.push_back(token);
                     token.clear();
                 }
                 tokens.push_back(std::string(1, c));
             }
-			else
+            else
                 token += c;
         }
     }
@@ -90,17 +90,17 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf) : _valid(true)
     t_locations current_location;
     bool in_server = false;
     bool in_location = false;
-    
+
     for (size_t i = 0; i < tokens.size(); ++i)
-	{
+    {
         if (tokens[i] == "server" && i + 1 < tokens.size() && tokens[i + 1] == "{")
-		{
+        {
             current_server = t_servers();
             in_server = true;
             ++i;
         }
-		else if (tokens[i] == "location" && in_server && !in_location && i + 2 < tokens.size())
-		{
+        else if (tokens[i] == "location" && in_server && !in_location && i + 2 < tokens.size())
+        {
             current_location = t_locations();
             in_location = true;
 

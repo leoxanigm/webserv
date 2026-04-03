@@ -48,8 +48,7 @@ void Connection::start()
 
 void Connection::_initSockets()
 {
-	// TODO: abstract server implementation and use ConfigFileParsing::const_iterator
-	std::list<t_servers>::const_iterator it = _config.getServers().begin();
+	ConfigFileParsing::servers_iterator_t it = _config.getServers().begin();
 	int count = 0;
 	int socketFd = -1;
 
@@ -58,7 +57,7 @@ void Connection::_initSockets()
 		try
 		{
 			socketFd = Socket::newSocket(it->listen_interface.c_str(), it->listen_port.c_str());
-			_sockets[socketFd] = &(it->locations);
+			_sockets[socketFd] = &(*it);
 			_addPollFd(socketFd, POLLIN);
 			count++;
 		}
@@ -115,9 +114,9 @@ void Connection::_addPollFd(int fd, short event)
 	_pollFds.push_back(newPFd);
 }
 
-void Connection::_addClient(int fd, const ConfigFileParsing::location_list_t *locations)
+void Connection::_addClient(int fd, const ConfigFileParsing::server_t *server)
 {
-	Client *client = new Client(fd, *locations);
+	Client *client = new Client(fd, *server);
 	_clients.push_back(client);
 
 	FdEntry entry;
