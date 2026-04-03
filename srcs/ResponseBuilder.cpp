@@ -36,6 +36,13 @@ ResponseBuilder::ResponseBuilder(
 		{
 			// TODO
 			// handle query strings
+			// static file
+			// directory index
+			// autoindex
+			// CGI
+			// upload
+			// delete
+			// error
 
 			// handle redirect first
 			if (location->return_code == 301 || location->return_code == 308)
