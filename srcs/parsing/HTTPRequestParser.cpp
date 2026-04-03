@@ -16,13 +16,16 @@
 
 #include <climits>
 
-HTTPRequest::HTTPRequest() : _method(GET), _valid(true), _complete(true), _error(0)
-{}
+HTTPRequest::HTTPRequest()
+	: _method(GET), _valid(true), _headerComplete(false), _bodyComplete(false), _error(0)
+{
+}
 
 HTTPRequest::HTTPRequest(const std::string &raw) : _method(GET),
-													_valid(true),
-													_complete(true),
-													_contentLength(0)
+												   _valid(true),
+												    _headerComplete(false),
+													_bodyComplete(false),
+												   _contentLength(0)
 {
 	parseRaw(raw);
 }
@@ -32,7 +35,7 @@ HTTPRequest::HTTPRequest(const HTTPRequest &other)
 	*this = other;
 }
 
-HTTPRequest	&HTTPRequest::operator=(const HTTPRequest &other)
+HTTPRequest &HTTPRequest::operator=(const HTTPRequest &other)
 {
 	if (this == &other)
 		return (*this);
@@ -46,142 +49,148 @@ HTTPRequest	&HTTPRequest::operator=(const HTTPRequest &other)
 	_contentType = other._contentType;
 	_transfert_encoding = other._transfert_encoding;
 	_contentLength = other._contentLength;
+	_headerComplete = other._headerComplete;
+	_bodyComplete = other._bodyComplete;
 	_body = other._body;
 	_valid = other._valid;
-	_complete = other._complete;
 	_error = other._error;
 	return (*this);
 }
 
 HTTPRequest::~HTTPRequest()
-{}
+{
+}
 
-void	HTTPRequest::setMethod(t_http_methods method)
+void HTTPRequest::setMethod(t_http_methods method)
 {
 	_method = method;
 }
 
-t_http_methods	HTTPRequest::getMethod() const
+t_http_methods HTTPRequest::getMethod() const
 {
 	return (_method);
 }
 
-void	HTTPRequest::setRequestTarget(const std::string &target)
+void HTTPRequest::setRequestTarget(const std::string &target)
 {
 	_requestTarget = target;
 }
 
-bool	HTTPRequest::isValid() const
+bool HTTPRequest::isValid() const
 {
 	return (_valid);
 }
 
-bool	HTTPRequest::isComplete() const
+bool HTTPRequest::isComplete() const
 {
-	return (_complete);
+	if (_method == GET || _method == DELETE)
+		return (_headerComplete);
+	if (_method == POST)
+		return (_headerComplete && _bodyComplete);
+	return (false);
 }
 
-const unsigned int	&HTTPRequest::getError() const
+const unsigned int &HTTPRequest::getError() const
 {
 	return (_error);
 }
 
-const std::string	&HTTPRequest::getRequestTarget() const
+const std::string &HTTPRequest::getRequestTarget() const
 {
 	return (_requestTarget);
 }
 
-void	HTTPRequest::setHTTPVersion(const std::string &version)
+void HTTPRequest::setHTTPVersion(const std::string &version)
 {
 	_httpVersion = version;
 }
 
-const std::string	&HTTPRequest::getHTTPVersion() const
+const std::string &HTTPRequest::getHTTPVersion() const
 {
 	return (_httpVersion);
 }
 
-const std::string	&HTTPRequest::getHost() const
+const std::string &HTTPRequest::getHost() const
 {
 	return (_host);
 }
 
-void	HTTPRequest::setHost(const std::string &host)
+void HTTPRequest::setHost(const std::string &host)
 {
 	_host = host;
 }
 
-const int	&HTTPRequest::getContentLength() const
+const int &HTTPRequest::getContentLength() const
 {
 	return (_contentLength);
 }
 
-void	HTTPRequest::setContentLength(const int &length)
+void HTTPRequest::setContentLength(const int &length)
 {
 	_contentLength = length;
 }
 
-void	HTTPRequest::setUserAgent(const std::string &agent)
+void HTTPRequest::setUserAgent(const std::string &agent)
 {
 	_userAgent = agent;
 }
 
-const std::string	&HTTPRequest::getUserAgent() const
+const std::string &HTTPRequest::getUserAgent() const
 {
 	return (_userAgent);
 }
 
-void	HTTPRequest::setBody(const std::string &body)
+void HTTPRequest::setBody(const std::string &body)
 {
 	_body = body;
 }
 
-const std::string	&HTTPRequest::getBody() const
+const std::string &HTTPRequest::getBody() const
 {
 	return (_body);
 }
 
-const std::string	&HTTPRequest::getTransfertEncoding() const
+const std::string &HTTPRequest::getTransfertEncoding() const
 {
 	return (_transfert_encoding);
 }
 
-void	HTTPRequest::setTransfertEncoding(const std::string &encoding)
+void HTTPRequest::setTransfertEncoding(const std::string &encoding)
 {
 	_transfert_encoding = encoding;
 }
 
-void	HTTPRequest::setLanguages(const std::map<std::string, float> &languages)
+void HTTPRequest::setLanguages(const std::map<std::string, float> &languages)
 {
 	_languages = languages;
 }
 
-const std::map<std::string, float>	&HTTPRequest::getLanguages() const
+const std::map<std::string, float> &HTTPRequest::getLanguages() const
 {
 	return (_languages);
 }
 
-void	HTTPRequest::setContentType(const std::map<std::string, std::string> &contentType)
+void HTTPRequest::setContentType(const std::map<std::string, std::string> &contentType)
 {
 	_contentType = contentType;
 }
 
-const std::map<std::string, std::string>	&HTTPRequest::getContentType() const
+const std::map<std::string, std::string> &HTTPRequest::getContentType() const
 {
 	return (_contentType);
 }
 
-void	HTTPRequest::setAccept(const std::map<std::string, std::string> &accept)
+void HTTPRequest::setAccept(const std::map<std::string, std::string> &accept)
 {
 	_accept = accept;
 }
 
-const std::map<std::string, std::string>	&HTTPRequest::getAccept() const
+const std::map<std::string, std::string> &HTTPRequest::getAccept() const
 {
 	return (_accept);
 }
 
-bool	HTTPRequest::parseMethodToken(const std::string &methodToken)
+bool HTTPRequest::parseMethodToken(const std::string &methodToken)
 {
 	if (methodToken == "GET")
 	{
@@ -201,18 +210,18 @@ bool	HTTPRequest::parseMethodToken(const std::string &methodToken)
 	return (false);
 }
 
-bool	HTTPRequest::parseRequestLine(const std::string &line)
+bool HTTPRequest::parseRequestLine(const std::string &line)
 {
 	std::string::size_type s1 = line.find(' ');
 	if (utils::ft_count(line, ' ') > 2 || s1 == std::string::npos)
 	{
-		_error = 400;  // invalid request line
+		_error = 400; // invalid request line
 		return (false);
 	}
 	std::string::size_type s2 = line.find(' ', s1 + 1);
 	if (s2 == std::string::npos)
 	{
-		_error = 400;  // invalid request line
+		_error = 400; // invalid request line
 		return (false);
 	}
 
@@ -222,22 +231,22 @@ bool	HTTPRequest::parseRequestLine(const std::string &line)
 
 	if (methodToken.empty() || target.empty() || version.empty())
 	{
-		_error = 400;  // invalid request line
+		_error = 400; // invalid request line
 		return (false);
 	}
 	if (!parseMethodToken(methodToken))
 	{
-		_error = 405;  // unsupported method
+		_error = 405; // unsupported method
 		return (false);
 	}
 	if (target[0] != '/')
 	{
-		_error = 404;  // invalid request target
+		_error = 404; // invalid request target
 		return (false);
 	}
 	if (version.compare("HTTP/1.0") != 0 && version.compare("HTTP/1.1") != 0)
 	{
-		_error = 422;  // invalid http version
+		_error = 400; // invalid http version
 		return (false);
 	}
 
@@ -246,7 +255,7 @@ bool	HTTPRequest::parseRequestLine(const std::string &line)
 	return (true);
 }
 
-bool	HTTPRequest::parseAcceptLanguage(const std::string &value)
+bool HTTPRequest::parseAcceptLanguage(const std::string &value)
 {
 	std::string::size_type start = 0;
 
@@ -290,7 +299,7 @@ bool	HTTPRequest::parseAcceptLanguage(const std::string &value)
 	return (true);
 }
 
-bool	HTTPRequest::parseAcceptHeader(const std::string &value)
+bool HTTPRequest::parseAcceptHeader(const std::string &value)
 {
 	std::string::size_type start = 0;
 	while (start <= value.size())
@@ -329,7 +338,7 @@ bool	HTTPRequest::parseAcceptHeader(const std::string &value)
 	return (true);
 }
 
-bool	HTTPRequest::parseContentType(const std::string &value)
+bool HTTPRequest::parseContentType(const std::string &value)
 {
 	std::string::size_type semi = value.find(';');
 	std::string mediaType = trim(value.substr(0, semi));
@@ -362,37 +371,35 @@ bool	HTTPRequest::parseContentType(const std::string &value)
 			start = next_semi + 1;
 		}
 	}
-	if (toLower(mediaType) == "multipart/form-data"
-		&& _contentType.find("boundary") == _contentType.end())
+	if (toLower(mediaType) == "multipart/form-data" && _contentType.find("boundary") == _contentType.end())
 		return (false);
 	return (true);
 }
 
-void	HTTPRequest::parseContentLength(const std::string &value)
+void HTTPRequest::parseContentLength(const std::string &value)
 {
 	if (!utils::ft_str_is_digits(value))
 	{
 		_contentLength = -1;
-		return ;
+		return;
 	}
 	char *end = NULL;
 	long parsed = std::strtol(value.c_str(), &end, 10);
 	if (end == value.c_str() || *end != '\0' || parsed < 0 || parsed > INT_MAX)
 	{
 		_contentLength = -1;
-		return ;
+		return;
 	}
 	_contentLength = static_cast<int>(parsed);
 }
 
-bool	HTTPRequest::parseHeaderLine(const std::string &line)
-
+bool HTTPRequest::parseHeaderLine(const std::string &line)
 
 {
 	std::string::size_type sep = line.find(':');
 	if (sep == std::string::npos)
 	{
-		_error = 400;  // invalid header line
+		_error = 400; // invalid header line
 		return (false);
 	}
 
@@ -400,7 +407,7 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 	std::string value = trim(line.substr(sep + 1));
 	if (key.empty())
 	{
-		_error = 400;  // invalid header key
+		_error = 400; // invalid header key
 		return (false);
 	}
 
@@ -410,7 +417,7 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 	{
 		if (!_host.empty())
 		{
-			_error = 400;  // duplicate host header
+			_error = 400; // duplicate host header
 			return (false);
 		}
 		_host = value;
@@ -438,7 +445,7 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 	{
 		if (_contentLength != 0)
 		{
-			_error = 400;  // duplicate host header
+			_error = 400; // duplicate host header
 			return (false);
 		}
 		parseContentLength(value);
@@ -455,16 +462,17 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 	* @param `raw`
 		The raw request formated with CRLF at the end on each line.
 */
-void	HTTPRequest::parseRaw(const std::string &raw)
+void HTTPRequest::parseRaw(const std::string &raw)
 {
 	std::string::size_type body_begin = raw.find("\r\n\r\n");
 	if (body_begin == std::string::npos)
 	{
 		_valid = false;
-		_complete = false;
-		_error = 400;  // missing header/body separator
-		return ;
+		_error = 400; // missing header/body separator
+		return;
 	}
+
+	_headerComplete = true;
 
 	std::istringstream rawStream(raw.substr(0, body_begin + 2));
 	std::string line;
@@ -481,38 +489,38 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 			if (!parseRequestLine(line))
 			{
 				_valid = false;
-				return ;
+				return;
 			}
-			continue ;
+			continue;
 		}
 
 		if (line.empty())
-			break ;
+			break;
 
 		if (!parseHeaderLine(line))
 		{
 			_valid = false;
-			return ;
+			return;
 		}
 	}
 
 	if (_host.empty())
 	{
 		_valid = false;
-		_error = 400;  // missing header/body separator
-		return ;
+		_error = 400; // missing header/body separator
+		return;
 	}
 	if (!_transfert_encoding.empty() && _contentLength > 0)
 	{
 		_valid = false;
-		_error = 400;  // both content-length and transfer-encoding are set
-		return ;
+		_error = 400; // both content-length and transfer-encoding are set
+		return;
 	}
 
-	std::istringstream	tmpBody(raw.substr(body_begin + 4));
-	std::string			bodyLine;
-	int					lineNum = 0;
-	int					length = -1;
+	std::istringstream tmpBody(raw.substr(body_begin + 4));
+	std::string bodyLine;
+	int lineNum = 0;
+	int length = -1;
 
 	// GET /index.html HTTP/1.1\r\nHost: localhost\r\nAccept: text/html\r\nTransfer-Encoding: chunked\r\n\r\n7\r\nWelcome\r\n1c\r\nto Mozilla Developer Network\r\n0\r\n\r\n
 	if (toLower(_transfert_encoding) == "chunked")
@@ -528,10 +536,8 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 				if (end == bodyLine.c_str() || *end != '\0' || length < 0)
 				{
 					_valid = false;
-					_complete = false;
-					std::cout << "complete > " << _complete << std::endl;
-					_error = 400;  // invalid chunked encoding
-					return ;
+					_error = 400; // invalid chunked encoding
+					return;
 				}
 			}
 			else if (lineNum % 2 == 1)
@@ -543,9 +549,11 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 		if (length != 0)
 		{
 			_valid = false;
-			_error = 400;  // invalid chunked body
-			return ;
+			_error = 400; // invalid chunked body
+			return;
 		}
+
+		_bodyComplete = true;
 	}
 	else
 	{
@@ -553,14 +561,16 @@ void	HTTPRequest::parseRaw(const std::string &raw)
 		if (_body.length() != static_cast<unsigned int>(_contentLength))
 		{
 			_valid = false;
-			_error = 400;  // content length is not the same length as the actual body
-			return ;
+			_error = 400; // content length is not the same length as the actual body
+			return;
 		}
+
+		_bodyComplete = true;
 	}
 
 	if (_method == GET && (!_body.empty() || !_contentType.empty()))
 	{
 		_valid = false;
-		_error = 400;  // body in a GET request
+		_error = 400; // body in a GET request
 	}
 }

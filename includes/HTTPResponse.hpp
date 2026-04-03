@@ -34,10 +34,10 @@ public:
 	enum Code
 	{
 		OK = 200,
-		// send Location attribute with the new data location
 		CREATED = 201,
 		// using 308 instead of 301 as we want the user agent to use the same
 		// request method on the redirect URI
+		// send Location attribute with the new data location
 		PERMANENT_REDIRECT = 308,
 	};
 
@@ -60,12 +60,6 @@ private:
 	std::string _statusLineFromCode(void) const;
 	std::string _dateGMT() const;
 };
-
-// class ResponseBuilder
-// {
-// public:
-// 	static HTTPResponse build(const HTTPRequest &req, const ConfigFileParsing &config);
-// };
 
 // class CGIHandler
 // {

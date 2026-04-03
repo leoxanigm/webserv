@@ -280,7 +280,7 @@ int Connection::_handleClient(int fd, short event)
 	if (client->getState() == Client::READ_PIPE)
 		_setFdPollEvent(client->getPipeReadFd(), POLLIN);
 
-	if (client->getState() == Client::SEND_PIPE)
+	if (client->getState() == Client::WRITE_PIPE)
 		_setFdPollEvent(client->getPipeWriteFd(), POLLOUT);
 
 	if (client->getState() == Client::CLOSE_CONNECTION)

@@ -6,7 +6,7 @@
 /*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/03 12:58:32 by zalemu           ###   ########.fr       */
+/*   Updated: 2026/04/03 18:27:48 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -162,7 +162,7 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf)
                 {
                     if (tokens[i + j] == ";")
                         break ;
-                    current_location.allowed_methods.push_back(tokens[i + j]);
+                    current_location.allowed_methods.insert(tokens[i + j]);
                     j++;
                 }
                 i += j;

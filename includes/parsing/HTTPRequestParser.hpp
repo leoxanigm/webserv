@@ -45,7 +45,8 @@ class HTTPRequest
 		std::map<std::string, float>		_languages;
 		std::map<std::string, std::string>	_accept;
 		bool								_valid;
-		bool								_complete;
+		bool								_headerComplete;
+		bool								_bodyComplete;
 		unsigned int						_error;
 
 		// POST request specific datas

@@ -21,7 +21,7 @@ Client::Client(int connFd, const ConfigFileParsing::server_t &server)
 	_outBuffer = "";
 	_pipeReadFd = -1;
 	_pipeWriteFd = -1;
-	_state = READ_REQUEST;
+	_state = RECV_REQUEST;
 	_sentSize = 0;
 }
 
@@ -35,58 +35,47 @@ Client::~Client()
 		close(_pipeWriteFd);
 }
 
+// How do we handle timeout and content length more than accepted value?
+// Also what if body size doesn't match content length value?
+// Two CGIs we can use:
+//	* python cgi module (python3.10) (https://docs.python.org/3.10/library/cgi.html)
+//	* php-cgi (https://php-dictionary.readthedocs.io/en/latest/dictionary/cgi.ini.html)
 int Client::handleRead(int fd)
 {
-	// TODO:
-	// Talk with Mathys on how to implement requestComplete for
-	//	* normal body
-	//  * form body
-	//  * chunked request
-	//  * file upload
-	// How do we handle timeout and content length more than accepted value?
-	// Also what if body size doesn't match content length value?
-	// Two CGIs we can use:
-	//	* python cgi module (python3.10) (https://docs.python.org/3.10/library/cgi.html)
-	//	* php-cgi (https://php-dictionary.readthedocs.io/en/latest/dictionary/cgi.ini.html)
+	if (_state != RECV_REQUEST && _state != READ_PIPE)
+		return (0);
 
-	char buff[4096];
+	ssize_t n = 0;
 
-	ssize_t n = recv(fd, buff, sizeof(buff), 0);
-	_inBuffer.append(buff, n);
-	_req = HTTPRequest(_inBuffer);
-	display_parsed_request(_req);
-
-	// if (_req.isValid())
-	// {
-
-	// }
-
-	// 	if (_req.isValid()) // Received the whole request buffer
-	// 	{
-	// 		_state = SEND_RESPONSE;
-
-	// 		std::cout << "INFO: received " << n << " bytes from " << fd << '\n';
-
-	// 		// if (_useCGI(req.getLocation()))
-	// 		// {
-	// 		// 	// Handle CGI
-	// 		// 	// set pipeFd
-	// 		// 	// _state = SEND_PIPE;
-	// 		// }
-	// 		// else
-	// 		// {
-	// 		// 	// Handle static files
-	// 		// }
-	// 	}
-	// 	else
-	// 		std::cout << _inBuffer << '\n';
-	// }
-
-	if (n <= 0) // Connection closed or error
+	if (_state == RECV_REQUEST)
 	{
-		closePipeReadFd();
-		closePipeWriteFd();
-		_state = CLOSE_CONNECTION;
+		char buff[4096];
+
+		n = recv(fd, buff, sizeof(buff), 0);
+		_inBuffer.append(buff, n);
+		_req = HTTPRequest(_inBuffer);
+		// display_parsed_request(_req);
+
+		if (_req.isComplete())
+		{
+			_inBuffer.clear();
+			_state = SEND_RESPONSE;
+
+			ResponseBuilder response(_req, _server);
+
+			// TODO
+			// If cgi, get read/write pipe fds here
+
+			if (!response.isCGI())
+				_outBuffer = response.str();
+		}
+
+		if (n <= 0) // Connection closed or error
+		{
+			closePipeReadFd();
+			closePipeWriteFd();
+			_state = CLOSE_CONNECTION;
+		}
 	}
 
 	return (n);
@@ -94,59 +83,32 @@ int Client::handleRead(int fd)
 
 int Client::handleWrite(int fd)
 {
+	if (_state != SEND_RESPONSE && _state != WRITE_PIPE)
+		return (0);
+
+	if (_outBuffer.empty())
+		return (0);
+
 	// TODO:
 	// For CGI, set state to READ_PIPE, then check on finish read pipe
 	// and set state to SEND_RESPONSE
 	// Check send_res length and remove it from begining of _outBuffer
 	// when _outBuffer is empty, close all pipe fds and set _state = CLOSE_CONNECTION
 
-	// (void) fd; //remove
+	ssize_t send_res = 0;
 
-	int send_res = 0;
+	send_res = send(fd, _outBuffer.c_str(), _outBuffer.length(), 0);
+	if (send_res == -1)
+		return (-1);
 
-	if (_req.isValid())
-	{
-		
-		// std::ifstream file("./www/html/index.html");
-		// std::ostringstream content;
+	_outBuffer.erase(0, static_cast<std::size_t>(send_res));
 
-		// content << file.rdbuf();
+	std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
 
-		// HTTPRequest req;
-		// ConfigFileParsing config("default.conf");
-		ResponseBuilder responseBuilder(_req, _server);
+	// close(_pipeFd);
+	if (_outBuffer.empty())
+		_state = CLOSE_CONNECTION;
 
-		const std::string &test = responseBuilder.str();
-
-		std::ostringstream response;
-		response << "HTTP/1.1 200 OK\r\n"
-				 << "Content-Type: text/html\r\n"
-				 << "Content-Length: " << test.length() << "\r\n"
-				 << "\r\n"
-				 << test;
-
-		const std::string &res = response.str();
-		std::cout << res << std::endl << std::endl;
-		send_res = send(fd, res.c_str(), res.length(), 0);
-		if (send_res == -1)
-		{
-			_state = CLOSE_CONNECTION;
-			std::cerr << "ERROR: sending response: " << '\n';
-		}
-		else
-		{
-			_sentSize += send_res;
-			std::cout << "INFO: sent " << send_res << " bytes to socket " << fd << '\n';
-		}
-
-		_inBuffer.clear();
-
-		// close(_pipeFd);
-		if (_outBuffer.size() == _sentSize)
-			_state = CLOSE_CONNECTION;
-	}
-
-	// return (send_res);
 	return (1);
 }
 
