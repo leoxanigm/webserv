@@ -13,6 +13,7 @@
 #include "../includes/Connection.hpp"
 #include "../includes/Client.hpp"
 #include "../includes/HTTPError.hpp"
+#include "../includes/UI.hpp"
 
 extern volatile sig_atomic_t pollStop;
 
@@ -42,6 +43,25 @@ Connection::~Connection()
 void Connection::start()
 {
 	std::cout << "webserv: waiting for connections.. \n";
+
+
+	// Not sure about this but I think it could show a more complete webserv
+	// But I think it could be improved both on the style and the way the datas are used to be dislayed
+	std::list<t_servers>			srvs = _config.getServers();
+	std::list<t_servers>::iterator	it;
+
+	for (it = srvs.begin(); it != srvs.end(); ++it)
+	{
+		std::cout << YELLOW << "Server " << UNDERLINE_YELLOW << it->server_name << YELLOW << " avalaible at:" << std::endl;
+
+		std::list<t_locations>	locs = it->locations;
+		std::list<t_locations>::iterator it2;
+		for (it2 = locs.begin(); it2 != locs.end(); ++it2)
+		{
+			std::cout << UNDERLINE_YELLOW << "\thttp://" << it->server_name << ":" << it->listen_port << it2->location << std::endl;
+		}
+		std::cout << RESET << std::endl;
+	}
 
 	_runPoll();
 }

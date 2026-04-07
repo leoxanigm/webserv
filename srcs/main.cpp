@@ -23,36 +23,37 @@ void sigIntHandler(int sig)
 int main(int argc, char const *argv[])
 {
 	signal(SIGINT, sigIntHandler);
+	
+	std::ifstream	file;
+	if (argc < 2)
+		file.open("./confs/default.conf");
+	else
+		file.open(argv[1]);
 
-	if (argc != 2)
-	{
-		std::cout << RED << "Not enough arguments\n" << "Usage: ./" << argv[0] << " <conf_file.conf>" << std::endl;
-		return (1);
-	}
-
-	// TODO:
-	// Error checking for config file read
-    std::ifstream file(argv[1]);
-    std::string line;
-    std::string raw;
+	std::string			line;
+	std::string			raw;
 
     while(std::getline(file, line))
 	{
 		raw += line;
 		raw += "\n";
 	}
+
 	ConfigFileParsing	config(raw);
-	// display_parsed_conf_file(config);  // Debug
-	// return (0);
+	if (!config.isValid())
+	{
+		display_parsed_conf_file(config);
+		std::cerr << RED << "The given configuration file is not valid." << RESET << std::endl;
+		std::cerr << RED << "On " << BLUE << UNDERLINE_BLUE << argv[1] << RESET << RED << ". See reference below:" << std::endl;
+		std::istringstream	errors(config.getErrorLine().c_str());
+		std::string			err;
+		while(std::getline(errors, err))
+			std::cerr << RED << "|\t" << err << std::endl;
+		return (1);
+	}
 
 	try
 	{
-		// if (argc == 2)
-		// 	ConfigFileParsing config(argv[1]);
-		// else
-		// 	ConfigFileParsing config;
-
-		// ConfigFileParsing config;
 		Connection connection(config);
 		connection.start();
 	}

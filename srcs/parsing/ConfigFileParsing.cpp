@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/07 13:12:46 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/07 16:59:03 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,6 +83,11 @@ bool	ConfigFileParsing::isValid(void) const
 	return (_valid);
 }
 
+std::string	ConfigFileParsing::getErrorLine(void) const
+{
+	return (_error_line);
+}
+
 ConfigFileParsing::ConfigFileParsing(std::string raw_conf) : _valid(true)
 {
     std::vector<std::string> tokens = tokenize(raw_conf);
@@ -107,22 +112,32 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf) : _valid(true)
             if (tokens[i + 2] == "{")
 			{
 				if (validateLocationPath(tokens[i + 1]))
-                	current_location.location = tokens[i + 1];
+                    current_location.location = tokens[i + 1];
 				else
+                {
 					_valid = false;
+                    _error_line += tokens[i] + " " + tokens[i + 1] + "\n";
+                }
                 i += 2;
             }
 			else if (i + 3 < tokens.size() && tokens[i + 3] == "{")
 			{
 				if (validateLocationPath(tokens[i + 1]))
-                	current_location.location = tokens[i + 1] + " " + tokens[i + 2];
+                    current_location.location = tokens[i + 1] + " " + tokens[i + 2];
 				else
+                {
 					_valid = false;
+                    _error_line += tokens[i] + " " + tokens[i + 1] + " " + tokens[i + 2] + "\n";
+                }
                 i += 3;
             }
 			else
 			{
                 _valid = false;
+                _error_line += tokens[i];
+                if (i + 1 < tokens.size())
+                    _error_line += " " + tokens[i + 1];
+                _error_line += "\n";
                 in_location = false;
             }
         }
@@ -217,6 +232,26 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf) : _valid(true)
                     i++;
                 }
             }
+            else if (tokens[i] == "client_timeout" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+            {
+                if (utils::ft_str_is_digits(tokens[i + 1]))
+                    current_server.client_timeout = std::atoi(tokens[i + 1].c_str());
+                if (current_server.client_timeout < 0)
+                {
+                    _valid = false;
+                    _error_line += tokens[i] + " " + tokens[i + 1] + "\n";
+                }
+            }
+            else if (tokens[i] == "max_body_size" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+            {
+                if (utils::ft_str_is_digits(tokens[i + 1]))
+                    current_server.max_body_size = std::atoi(tokens[i + 1].c_str());
+                if (current_server.max_body_size < 0)
+                {
+                    _valid = false;
+                    _error_line += tokens[i] + " " + tokens[i + 1] + "\n";
+                }
+            }
 			else if (tokens[i] == "server_name" && i + 2 < tokens.size() && tokens[i + 2] == ";")
 			{
                 current_server.server_name = tokens[i + 1];
@@ -245,7 +280,10 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf) : _valid(true)
         }
     }
     if (in_server || in_location)
+    {
         _valid = false;
+        _error_line += "Missing closing bracket '}'\n";
+    }
 }
 
 const std::list<t_servers>	&ConfigFileParsing::getServers(void) const

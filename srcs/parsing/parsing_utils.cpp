@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parsing_utils.cpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/17 22:13:32 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/03 13:59:02 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/07 16:31:02 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,13 +102,13 @@ std::vector<std::string> extractBraces(const std::string& input)
 bool validateLocationPath(const std::string &path)
 {
     if (path.empty() || path[0] != '/')
-        return false;
+        return (false);
     for (size_t i = 1; i < path.size(); ++i)
     {
         if (path[i] == '/' && path[i - 1] == '/')
-            return false;
+            return (false);
         if (!std::isalnum((unsigned char)path[i]) && path[i] != '-' && path[i] != '_' && path[i] != '/')
-            return false;
+            return (false);
     }
-    return true;
+    return (true);
 }

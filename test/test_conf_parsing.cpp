@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   test_conf_parsing.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/03 13:12:26 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/03 13:19:32 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/07 15:44:58 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,7 +72,7 @@ static void expectEqualSize(const std::string &name, size_t got, size_t expected
 		std::cout << "  got:      [" << got << "]\n  expected: [" << expected << "]" << std::endl;
 }
 
-static void expectListContains(const std::string &name, const std::list<std::string> &lst, const std::string &val)
+static void expectListContains(const std::string &name, const std::set<std::string> &lst, const std::string &val)
 {
 	bool found = std::find(lst.begin(), lst.end(), val) != lst.end();
 	printResult(name, found);

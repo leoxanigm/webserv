@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/07 13:12:32 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/07 15:46:21 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,9 +24,9 @@
 # include <sstream>
 # include <fstream>
 
-// TODO:
-// request timeout seconds
-// max content length
+// TODO:  Done
+// // request timeout seconds
+// // max content length
 
 typedef struct s_HTTPStatusCodePages
 {
@@ -106,12 +106,16 @@ typedef struct	s_servers
 	std::string				listen_port;
 	std::string				listen_interface;
 	std::string				server_name;
+	int						client_timeout;	// in seconds
+	int						max_body_size;	// in mega bytes
 
 	s_servers() : 
 		is_default_server(false),
 		listen_port("8080"),
 		listen_interface("[::]"), // test custom host (eg, zalemu.42.fr)
-		server_name("webserv") {}
+		server_name("webserv"),
+		client_timeout(60),
+		max_body_size(1) {}
 }	t_servers;
 
 class ConfigFileParsing
@@ -122,11 +126,12 @@ class ConfigFileParsing
 		ConfigFileParsing &operator=(const ConfigFileParsing &obj);
 		
 		std::list<t_servers>	_servers;
+
+		std::string				_error_line;
 		bool					_valid;
 
 	public:
 		ConfigFileParsing(std::string raw_conf);
-		bool	isValid(void) const;
 		~ConfigFileParsing();
 
 		typedef std::list<t_locations> location_list_t;
@@ -137,6 +142,8 @@ class ConfigFileParsing
 		typedef std::list<t_locations>::const_iterator location_iterator_t;
 		
 		const std::list<t_servers> &getServers(void) const;
+		bool						isValid(void) const;
+		std::string					getErrorLine(void) const;
 };
 
 #endif

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parsing_utils.hpp                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/17 23:15:00 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/03 13:53:16 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/07 15:31:22 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 
 # include <string>
 # include <vector>
+# include "../utils.hpp"
 
 std::string					trim(const std::string &value);
 std::string					toLower(const std::string &value);
