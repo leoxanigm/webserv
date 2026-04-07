@@ -51,7 +51,7 @@ std::vector<char> utils::readFile(const std::string &path)
 	std::size_t size = file.tellg();
 	file.seekg(0, file.beg);
 
-	readData.reserve(size);
+	readData.resize(size);
 	file.read(readData.data(), size);
 	file.close();
 

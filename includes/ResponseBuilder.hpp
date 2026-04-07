@@ -13,6 +13,7 @@ public:
 	~ResponseBuilder();
 
 	std::string str() const;
+	bool isCGI() const;
 
 private:
 	ResponseBuilder();
@@ -23,6 +24,8 @@ private:
 	const ConfigFileParsing::server_t &_server;
 	HTTPResponse _response;
 
+	bool _isCGI;
+
 	void _processGET(const ConfigFileParsing::location_t *location);
 	void _processPOST(const ConfigFileParsing::location_t *location);
 	void _processDELETE(const ConfigFileParsing::location_t *location);
@@ -32,6 +35,8 @@ private:
 		const std::string &reqLocation) const;
 
 	static std::string _getMimeType(const std::string &path);
+	static std::string _resolvePath(
+		const std::string &reqURI, const ConfigFileParsing::location_t *location);
 };
 
 #endif /* RESPONSE_BUILDER_HPP */

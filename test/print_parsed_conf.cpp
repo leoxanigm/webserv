@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   print_parsed_conf.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
+/*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/25 13:36:19 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/02 18:13:30 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/03 17:55:37 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ void display_parsed_conf_file(const ConfigFileParsing &config)
 			std::cout << "index : " << it2->index << std::endl << std::endl;
 
 			std::cout << "Allowed methods : ";
-			std::list<std::string>::iterator it3;
+			std::set<std::string>::iterator it3;
 			for (it3 = it2->allowed_methods.begin(); it3 != it2->allowed_methods.end(); ++it3)
 			{
 				std::cout << it3->c_str() << " ";

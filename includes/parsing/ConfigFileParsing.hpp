@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/03 13:57:26 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/07 13:12:32 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 # define CONFIGFILEPARSING_HPP
 
 # include <list>
+# include <set>
 # include <string>
 # include <cerrno>
 # include <clocale>
@@ -24,8 +25,8 @@
 # include <fstream>
 
 // TODO:
-// config file error checking
-// List of accepted HTTP methods for the route.
+// request timeout seconds
+// max content length
 
 typedef struct s_HTTPStatusCodePages
 {
@@ -39,6 +40,7 @@ typedef struct s_HTTPStatusCodePages
 	std::string	Unauthorized;
 	std::string	Forbidden;
 	std::string	NotFound;
+	std::string	MethodNotAllowed;
 
 	std::string	InternalServerError;
 	std::string	NotImplemented;
@@ -54,6 +56,7 @@ typedef struct s_HTTPStatusCodePages
 		Unauthorized("./confs/status_pages/401.html"),
 		Forbidden("./confs/status_pages/403.html"),
 		NotFound("./confs/status_pages/404.html"),
+		MethodNotAllowed("./confs/status_pages/405.html"),
 		InternalServerError("./confs/status_pages/500.html"),
 		NotImplemented("./confs/status_pages/501.html"),
 		BadGateway("./confs/status_pages/502.html"),
@@ -78,7 +81,7 @@ typedef struct	s_locations
 	std::string				return_location;
 	std::string				root;
 	std::string				index;
-	std::list<std::string>	allowed_methods;
+	std::set<std::string>	allowed_methods;
 	// Did I miss some ?
 	// redirection
 	// cgi enabled and related cgi paths

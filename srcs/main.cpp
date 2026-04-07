@@ -30,6 +30,8 @@ int main(int argc, char const *argv[])
 		return (1);
 	}
 
+	// TODO:
+	// Error checking for config file read
     std::ifstream file(argv[1]);
     std::string line;
     std::string raw;
@@ -40,9 +42,8 @@ int main(int argc, char const *argv[])
 		raw += "\n";
 	}
 	ConfigFileParsing	config(raw);
-	display_parsed_conf_file(config);  // Debug
-	// testConfParsing();
-	return (0);
+	// display_parsed_conf_file(config);  // Debug
+	// return (0);
 
 	try
 	{

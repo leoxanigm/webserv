@@ -35,7 +35,7 @@ void HTTPResponse::setBody(const std::string &body)
 
 void HTTPResponse::setBody(const std::vector<char> &body)
 {
-	_body.insert(_body.end(), body.begin(), body.end());
+	_body = std::string(body.begin(), body.end());
 }
 
 std::string HTTPResponse::toString() const
@@ -77,16 +77,16 @@ std::string HTTPResponse::_statusLineFromCode(void) const
 		switch (_statusCode)
 		{
 		case OK:
-			statusLine << "OK";
+			statusLine << "200 OK";
 			break;
 		case CREATED:
-			statusLine << "Created";
+			statusLine << "201 Created";
 			break;
 		case PERMANENT_REDIRECT:
-			statusLine << "Permanent Redirect";
+			statusLine << "308 Permanent Redirect";
 			break;
 		default:
-			statusLine << "Unknown";
+			statusLine << "500 Internal Server Error";
 			break;
 		}
 	}

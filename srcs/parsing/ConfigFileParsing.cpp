@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/03 14:02:09 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/07 13:12:46 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -177,7 +177,7 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf) : _valid(true)
                 {
                     if (tokens[i + j] == ";")
                         break ;
-                    current_location.allowed_methods.push_back(tokens[i + j]);
+                    current_location.allowed_methods.insert(tokens[i + j]);
                     j++;
                 }
                 i += j;

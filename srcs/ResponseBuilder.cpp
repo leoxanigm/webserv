@@ -16,24 +16,63 @@ ResponseBuilder::ResponseBuilder(
 	const HTTPRequest &req, const ConfigFileParsing::server_t &server)
 	: _request(req), _server(server)
 {
-	// TODO:
-	// request error checking
+	_isCGI = false;
 
-	const ConfigFileParsing::location_t *location = 0;
-	location = _longestPrefixLocationMatch(_request.getRequestTarget());
-	if (location == 0)
+	if (!_request.isValid())
 	{
-		_response.setStatusCode(404);
-		// _res.setBody(_pathToBody(_getErrorPage(404)));
+		_response.setStatusCode(_request.getError());
+		_response.setBody(utils::readFile(_getErrorPage(_request.getError())));
 	}
 	else
 	{
-		if (_request.getMethod() == GET)
-			_processGET(location);
-		if (_request.getMethod() == POST)
-			_processPOST(location);
-		if (_request.getMethod() == DELETE)
-			_processDELETE(location);
+		const ConfigFileParsing::location_t *location = 0;
+		location = _longestPrefixLocationMatch(_request.getRequestTarget());
+		if (location == 0)
+		{
+			_response.setStatusCode(HTTPError::NOT_FOUND);
+			_response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
+		}
+		else
+		{
+			// TODO
+			// handle query strings
+			// static file
+			// directory index
+			// autoindex
+			// CGI
+			// upload
+			// delete
+			// error
+
+			// handle redirect first
+			if (location->return_code == 301 || location->return_code == 308)
+			{
+				_response.setStatusCode(HTTPResponse::PERMANENT_REDIRECT);
+				_response.setHeader("Location", location->return_location);
+			}
+			else
+			{
+				try
+				{
+					if (_request.getMethod() == GET)
+						_processGET(location);
+					if (_request.getMethod() == POST)
+						_processPOST(location);
+					if (_request.getMethod() == DELETE)
+						_processDELETE(location);
+				}
+				catch (const HTTPError &e)
+				{
+					_response.setStatusCode(e.code());
+					_response.setBody(utils::readFile(_getErrorPage(e.code())));
+				}
+				catch (const std::exception &e)
+				{
+					_response.setStatusCode(HTTPError::INTERNAL_SERVER_ERROR);
+					_response.setBody(utils::readFile(_getErrorPage(HTTPError::INTERNAL_SERVER_ERROR)));
+				}
+			}
+		}
 	}
 }
 
@@ -44,8 +83,22 @@ std::string ResponseBuilder::str() const
 	return (_response.toString());
 }
 
+bool ResponseBuilder::isCGI() const
+{
+	return (_isCGI);
+}
+
 void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 {
+	if (location->allowed_methods.count("GET") == 0)
+	{
+		_response.setStatusCode(HTTPError::METHOD_NOT_ALLOWED);
+		_response.setBody(utils::readFile(_getErrorPage(HTTPError::METHOD_NOT_ALLOWED)));
+		return;
+	}
+
+	std::string path = _resolvePath(_request.getRequestTarget(), location);
+
 	if (location->is_cgi)
 	{
 	}
@@ -76,12 +129,22 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 
 void ResponseBuilder::_processPOST(const ConfigFileParsing::location_t *location)
 {
-	(void) location;
+	if (location->allowed_methods.count("POST") == 0)
+	{
+		_response.setStatusCode(HTTPError::METHOD_NOT_ALLOWED);
+		_response.setBody(utils::readFile(_getErrorPage(HTTPError::METHOD_NOT_ALLOWED)));
+		return;
+	}
 }
 
 void ResponseBuilder::_processDELETE(const ConfigFileParsing::location_t *location)
 {
-	(void) location;
+	if (location->allowed_methods.count("DELETE") == 0)
+	{
+		_response.setStatusCode(HTTPError::METHOD_NOT_ALLOWED);
+		_response.setBody(utils::readFile(_getErrorPage(HTTPError::METHOD_NOT_ALLOWED)));
+		return;
+	}
 }
 
 void ResponseBuilder::_directoryListing()
@@ -143,18 +206,24 @@ void ResponseBuilder::_directoryListing()
 	struct std::tm *tm;
 	char dateStr[256];
 	std::string filePath;
+	std::string href;
 	while ((dirIt = readdir(directory)) != 0)
 	{
 		if (std::strcmp(dirIt->d_name, ".") == 0 ||
 			std::strcmp(dirIt->d_name, "..") == 0)
 			continue;
 
-		output << "<tr><td><a href=\"" << dirIt->d_name << "\">"
-			   << dirIt->d_name << "</a></td>";
-
 		filePath = fullPath + std::string(dirIt->d_name);
 		if (stat(filePath.c_str(), &statBuff) == -1)
 			continue;
+
+		output << "<tr><td><a href=\"" << dirIt->d_name;
+
+		if (S_ISDIR(statBuff.st_mode)) // If directory add `/` to the href
+			output << '/';
+
+		output << "\">"
+			   << dirIt->d_name << "</a></td>";
 
 		tm = std::localtime(&statBuff.st_mtime);
 		std::strftime(dateStr, sizeof(dateStr), "%Y-%m-%d %H:%M", tm);
@@ -195,6 +264,8 @@ const std::string &ResponseBuilder::_getErrorPage(int code) const
 		return (_server.error_pages.Forbidden);
 	case 404:
 		return (_server.error_pages.NotFound);
+	case 405:
+		return (_server.error_pages.MethodNotAllowed);
 	case 500:
 		return (_server.error_pages.InternalServerError);
 	case 501:
@@ -208,36 +279,43 @@ const std::string &ResponseBuilder::_getErrorPage(int code) const
 	return (_server.error_pages.InternalServerError);
 }
 
-const ConfigFileParsing::location_t *ResponseBuilder::_longestPrefixLocationMatch(
-	const std::string &reqLocation) const
+/**
+ * Searches for a longest prefix route from our list of locations and
+ * returns a pointer to the location struct.
+ * For example, in config, if we have location for `/` and `/images`
+ * we match /images/logo.png to `/images`. If we don't have `/images`
+ * location, we match it to `/`.
+ */
+const ConfigFileParsing::location_t *
+ResponseBuilder::_longestPrefixLocationMatch(const std::string &reqURI) const
 {
-
 	const ConfigFileParsing::location_t *location = 0;
-	std::size_t longestMatch = 0, slashLoc = 0, currMatch, i;
+	std::size_t locationLen = 0;
+
 	ConfigFileParsing::location_iterator_t it = _server.locations.begin();
-	std::string confLocation;
-
-	for (; it != _server.locations.end(); it++)
+	for (; it != _server.locations.end(); ++it)
 	{
-		currMatch = i = 0;
-		confLocation = it->location[it->location.size() - 1] == '/'
-						   ? it->location
-						   : it->location + "/";
+		const std::string &loc = it->location;
+		std::size_t len = loc.size();
 
-		while (i < reqLocation.size() && i < confLocation.size() && reqLocation[i] == confLocation[i])
+		if (reqURI.compare(0, len, loc) != 0)
+			continue;
+
+		// Handle root match as special case
+		if (loc == "/" && !reqURI.empty() && reqURI[0] == '/' && len > locationLen)
 		{
-			if (reqLocation[i] == '/')
-				slashLoc = i + 1;
-			currMatch++;
-			i++;
+			location = &(*it);
+			locationLen = len;
+			continue;
 		}
 
-		if ((currMatch > longestMatch && i == it->location.size() && i == reqLocation.size()) // Exact match
-			|| slashLoc > longestMatch														  // Last slash location
-		)
+		bool exactMatch = (reqURI.size() == len);
+		bool boundaryMatch = (!exactMatch && reqURI[len] == '/');
+
+		if ((exactMatch || boundaryMatch) && len > locationLen)
 		{
-			longestMatch = currMatch;
 			location = &(*it);
+			locationLen = len;
 		}
 	}
 
@@ -282,4 +360,30 @@ std::string ResponseBuilder::_getMimeType(const std::string &path)
 		return "video/webm";
 
 	return "application/octet-stream";
+}
+
+/**
+ * Construct resolved file path from request URI and route root.
+ * For example, for root = ./www/site/images and URI = /images/logo.png
+ * resolved path = ./www/site/images/logo.png
+ */
+std::string ResponseBuilder::_resolvePath(
+	const std::string &reqURI, const ConfigFileParsing::location_t *location)
+{
+	std::string suffix = reqURI.substr(location->location.size());
+
+	if (!suffix.empty() && suffix[0] != '/')
+		suffix.insert(suffix.begin(), '/');
+
+	if (!location->root.empty() &&
+		location->root[location->root.size() - 1] == '/' &&
+		!suffix.empty() && suffix[0] == '/')
+		return (location->root + suffix.substr(1));
+
+	if (!location->root.empty() &&
+		location->root[location->root.size() - 1] != '/' &&
+		!suffix.empty() && suffix[0] != '/')
+		return (location->root + "/" + suffix);
+
+	return (location->root + suffix);
 }
