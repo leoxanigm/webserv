@@ -42,7 +42,7 @@ int main(int argc, char const *argv[])
 	ConfigFileParsing	config(raw);
 	display_parsed_conf_file(config);  // Debug
 	// testConfParsing();
-	// return (0);
+	return (0);
 
 	try
 	{
