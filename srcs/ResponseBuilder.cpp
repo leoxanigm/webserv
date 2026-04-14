@@ -101,11 +101,22 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 
 	if (location->is_cgi)
 	{
+		// TODO: CGI handling
 	}
 	else
 	{
 		struct stat st;
-		if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
+
+		// Can't find file or directory
+		if (stat(path.c_str(), &st) != 0)
+		{
+			_response.setStatusCode(HTTPError::NOT_FOUND);
+			_response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
+			return;
+		}
+
+		// Directory
+		if (S_ISDIR(st.st_mode))
 		{
 			const std::string &reqTarget = _request.getRequestTarget();
 
@@ -116,6 +127,29 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 				return;
 			}
 
+			// Try to serve index file if configured
+			if (!location->index.empty())
+			{
+				std::string indexPath = path;
+				if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
+					indexPath += "/";
+				indexPath += location->index;
+
+				struct stat indexSt;
+				if (stat(indexPath.c_str(), &indexSt) == 0 && S_ISREG(indexSt.st_mode))
+				{
+					std::vector<char> fileContent = utils::readFile(indexPath);
+					if (!fileContent.empty() || indexSt.st_size == 0)
+					{
+						_response.setStatusCode(HTTPResponse::OK);
+						_response.setHeader("Content-Type", _getMimeType(indexPath));
+						_response.setBody(fileContent);
+						return;
+					}
+				}
+			}
+
+			// No index file or can't read it, check autoindex
 			if (location->autoindex)
 				_directoryListing(reqTarget, path);
 			else
@@ -133,6 +167,29 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 			}
 			return;
 		}
+
+		// File
+		if (S_ISREG(st.st_mode))
+		{
+			std::vector<char> fileContent = utils::readFile(path);
+			if (fileContent.empty() && st.st_size > 0)
+			{
+
+				// File could not be read (permissions or other error)
+				_response.setStatusCode(HTTPError::FORBIDDEN);
+				_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
+				return;
+			}
+
+			_response.setStatusCode(HTTPResponse::OK);
+			_response.setHeader("Content-Type", _getMimeType(path));
+			_response.setBody(fileContent);
+			return;
+		}
+
+		// Not a regular file or directory (socket, device, etc.)
+		_response.setStatusCode(HTTPError::FORBIDDEN);
+		_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
 	}
 }
 
