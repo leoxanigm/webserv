@@ -161,7 +161,7 @@ void Connection::_closeClientFd(Client *client, FdType type)
 	if (type == FD_PIPE_READ)
 		client->closePipeReadFd();
 	if (type == FD_PIPE_WRITE)
-		client->codePipeWriteFd();
+		client->closePipeWriteFd();
 }
 
 void Connection::_removeClient(int fd)

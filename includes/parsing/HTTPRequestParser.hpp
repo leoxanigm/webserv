@@ -66,6 +66,8 @@ class HTTPRequest
 		void		parseContentLength(const std::string &value);
 		bool		parseCookie(const std::string &value);
 
+		std::string	percent_decode(const std::string &in);
+
 	public:
 		HTTPRequest();
 		HTTPRequest(const std::string &raw);
