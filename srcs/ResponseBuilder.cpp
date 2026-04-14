@@ -104,13 +104,22 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 	}
 	else
 	{
-		if (_request.getRequestTarget()[_request.getRequestTarget().size() - 1] == '/')
+		struct stat st;
+		if (stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode))
 		{
+			const std::string &reqTarget = _request.getRequestTarget();
+
+			if (!reqTarget.empty() && reqTarget[reqTarget.size() - 1] != '/')
+			{
+				_response.setStatusCode(HTTPResponse::PERMANENT_REDIRECT);
+				_response.setHeader("Location", reqTarget + "/");
+				return;
+			}
+
 			if (location->autoindex)
-				_directoryListing();
+				_directoryListing(reqTarget, path);
 			else
 			{
-				std::cout << "here" << '\n';
 				_response.setStatusCode(HTTPError::FORBIDDEN);
 				try
 				{
@@ -118,11 +127,11 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 				}
 				catch (const std::exception &e)
 				{
-					// For error pages, not being able to read the file is unrecoverable.
 					std::cerr << "Error setting body in ResponseBuilder::_processGET: "
 							  << e.what() << '\n';
 				}
 			}
+			return;
 		}
 	}
 }
@@ -147,26 +156,8 @@ void ResponseBuilder::_processDELETE(const ConfigFileParsing::location_t *locati
 	}
 }
 
-void ResponseBuilder::_directoryListing()
+void ResponseBuilder::_directoryListing(const std::string &reqLocation, const std::string &fullPath)
 {
-	// location should have been properly constructed here.
-	// For example, if url was /files and in config if /files was
-	// routed to ./www/html/files,
-	// _request.getReqLocation() == /files/
-	// _request.getFullPath() == ./www/html/files/
-	// This make sure we separate error checking concern from response
-	// const std::string &reqLocation _request.getReqLocation(); // TODO
-	// const std::string &fullPath _request.getFullPath(); // TODO
-
-	const std::string reqLocation = "/files/";
-	const std::string fullPath = "./www/html/files/";
-
-	// TODO
-	// * Check if directory listing allowed for the current fullPath in config
-	// 	 if not return 403 Forbidden
-	// * Add method to get default pages from _config
-	//	 - add a private method to read from default page and return string
-
 	errno = 0;
 	DIR *directory = opendir(fullPath.c_str());
 	if (!directory)
