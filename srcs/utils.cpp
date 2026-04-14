@@ -65,3 +65,12 @@ bool utils::ft_endswith(const std::string &fullString, const std::string &ending
     else
         return (false);
 }
+
+bool utils::_writeFile(const std::string &path, const std::string &body)
+{
+    std::ofstream ofs(path.c_str(), std::ios::binary);
+    if (!ofs.is_open())
+        return (false);
+    ofs.write(body.c_str(), body.size());
+    return (!ofs.fail());
+}
