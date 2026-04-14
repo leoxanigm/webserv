@@ -1,6 +1,7 @@
 #include <sstream>
 #include <ctime>
 #include <cstring>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
@@ -34,15 +35,27 @@ ResponseBuilder::ResponseBuilder(
 		}
 		else
 		{
-			// TODO
-			// handle query strings
-			// static file
-			// directory index
-			// autoindex
-			// CGI
-			// upload
-			// delete
-			// error
+			if (location->is_cgi)
+			{
+				bool pipeErr = false;
+				if (pipe(pipeIn) == -1)
+					pipeErr = true;
+				if (!pipeErr && pipe(pipeOut) == -1)
+				{
+					close(pipeIn[0]);
+					close(pipeIn[1]);
+					pipeErr = true;
+				}
+
+				if (pipeErr)
+				{
+					_response.setStatusCode(HTTPError::INTERNAL_SERVER_ERROR);
+					_response.setBody(utils::readFile(_getErrorPage(HTTPError::INTERNAL_SERVER_ERROR)));
+					return ;
+				}
+
+				_isCGI = true;
+			}
 
 			// handle redirect first
 			if (location->return_code == 301 || location->return_code == 308)
@@ -273,42 +286,42 @@ void ResponseBuilder::_processPOST(const ConfigFileParsing::location_t *location
 
 void ResponseBuilder::_processDELETE(const ConfigFileParsing::location_t *location)
 {
-    if (location->allowed_methods.count("DELETE") == 0)
-    {
-        _response.setStatusCode(HTTPError::METHOD_NOT_ALLOWED);
-        _response.setBody(utils::readFile(_getErrorPage(HTTPError::METHOD_NOT_ALLOWED)));
-        return;
-    }
+	if (location->allowed_methods.count("DELETE") == 0)
+	{
+		_response.setStatusCode(HTTPError::METHOD_NOT_ALLOWED);
+		_response.setBody(utils::readFile(_getErrorPage(HTTPError::METHOD_NOT_ALLOWED)));
+		return;
+	}
 
-    std::string requestTarget = _stripQueryString(_request.getRequestTarget());
-    std::string path = _resolvePath(requestTarget, location);
+	std::string requestTarget = _stripQueryString(_request.getRequestTarget());
+	std::string path = _resolvePath(requestTarget, location);
 
-    struct stat st;
-    if (stat(path.c_str(), &st) != 0)
-    {
-        _response.setStatusCode(HTTPError::NOT_FOUND);
-        _response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
-        return;
-    }
+	struct stat st;
+	if (stat(path.c_str(), &st) != 0)
+	{
+		_response.setStatusCode(HTTPError::NOT_FOUND);
+		_response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
+		return;
+	}
 
-    // Don't allow deleting directories
-    if (S_ISDIR(st.st_mode))
-    {
-        _response.setStatusCode(HTTPError::FORBIDDEN);
-        _response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
-        return;
-    }
+	// Don't allow deleting directories
+	if (S_ISDIR(st.st_mode))
+	{
+		_response.setStatusCode(HTTPError::FORBIDDEN);
+		_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
+		return;
+	}
 
-    // Delete the file
-    if (std::remove(path.c_str()) != 0)
-    {
-        _response.setStatusCode(HTTPError::FORBIDDEN);
-        _response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
-        return;
-    }
+	// Delete the file
+	if (std::remove(path.c_str()) != 0)
+	{
+		_response.setStatusCode(HTTPError::FORBIDDEN);
+		_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
+		return;
+	}
 
-    // Return 204 No Content on success
-    _response.setStatusCode(HTTPResponse::OK);
+	// Return 204 No Content on success
+	_response.setStatusCode(HTTPResponse::OK);
 }
 
 void ResponseBuilder::_directoryListing(const std::string &reqLocation, const std::string &fullPath)

@@ -25,6 +25,8 @@ private:
 	HTTPResponse _response;
 
 	bool _isCGI;
+	int pipeIn[2];
+	int pipeOut[2];
 
 	void _processGET(const ConfigFileParsing::location_t *location);
 	void _processPOST(const ConfigFileParsing::location_t *location);
