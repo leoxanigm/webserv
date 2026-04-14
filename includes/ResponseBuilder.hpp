@@ -29,7 +29,7 @@ private:
 	void _processGET(const ConfigFileParsing::location_t *location);
 	void _processPOST(const ConfigFileParsing::location_t *location);
 	void _processDELETE(const ConfigFileParsing::location_t *location);
-	void _directoryListing();
+	void _directoryListing(const std::string &reqLocation, const std::string &fullPath);
 	const std::string &_getErrorPage(int code) const;
 	const ConfigFileParsing::location_t *_longestPrefixLocationMatch(
 		const std::string &reqLocation) const;
