@@ -37,6 +37,14 @@ private:
 	static std::string _getMimeType(const std::string &path);
 	static std::string _resolvePath(
 		const std::string &reqURI, const ConfigFileParsing::location_t *location);
+	static std::string _stripQueryString(const std::string &uri);
+	static std::string _getRequestMediaType(
+		const std::map<std::string, std::string> &contentType);
+	static bool _parseMultipartFile(
+		const std::string &body,
+		const std::string &boundary,
+		std::string &outFilename,
+		std::string &outContent);
 };
 
 #endif /* RESPONSE_BUILDER_HPP */

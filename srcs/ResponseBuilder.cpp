@@ -97,7 +97,8 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 		return;
 	}
 
-	std::string path = _resolvePath(_request.getRequestTarget(), location);
+	std::string requestTarget = _stripQueryString(_request.getRequestTarget());
+	std::string path = _resolvePath(requestTarget, location);
 
 	if (location->is_cgi)
 	{
@@ -118,12 +119,10 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 		// Directory
 		if (S_ISDIR(st.st_mode))
 		{
-			const std::string &reqTarget = _request.getRequestTarget();
-
-			if (!reqTarget.empty() && reqTarget[reqTarget.size() - 1] != '/')
+			if (!requestTarget.empty() && requestTarget[requestTarget.size() - 1] != '/')
 			{
 				_response.setStatusCode(HTTPResponse::PERMANENT_REDIRECT);
-				_response.setHeader("Location", reqTarget + "/");
+				_response.setHeader("Location", requestTarget + "/");
 				return;
 			}
 
@@ -151,7 +150,7 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 
 			// No index file or can't read it, check autoindex
 			if (location->autoindex)
-				_directoryListing(reqTarget, path);
+				_directoryListing(requestTarget, path);
 			else
 			{
 				_response.setStatusCode(HTTPError::FORBIDDEN);
@@ -174,7 +173,6 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 			std::vector<char> fileContent = utils::readFile(path);
 			if (fileContent.empty() && st.st_size > 0)
 			{
-
 				// File could not be read (permissions or other error)
 				_response.setStatusCode(HTTPError::FORBIDDEN);
 				_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
@@ -201,16 +199,116 @@ void ResponseBuilder::_processPOST(const ConfigFileParsing::location_t *location
 		_response.setBody(utils::readFile(_getErrorPage(HTTPError::METHOD_NOT_ALLOWED)));
 		return;
 	}
+
+	std::string requestTarget = _stripQueryString(_request.getRequestTarget());
+	std::string path = _resolvePath(requestTarget, location);
+
+	struct stat st;
+	if (stat(path.c_str(), &st) != 0)
+	{
+		_response.setStatusCode(HTTPError::NOT_FOUND);
+		_response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
+		return;
+	}
+
+	std::string mediaType = _getRequestMediaType(_request.getContentType());
+	bool created = false;
+	std::string responseBody;
+
+	if (mediaType == "multipart/form-data")
+	{
+		std::map<std::string, std::string> contentType = _request.getContentType();
+		std::string boundary = contentType["boundary"];
+		if (boundary.empty())
+		{
+			_response.setStatusCode(HTTPError::BAD_REQUEST);
+			_response.setBody(utils::readFile(_getErrorPage(HTTPError::BAD_REQUEST)));
+			return;
+		}
+
+		std::string filename;
+		std::string fileContent;
+		if (!_parseMultipartFile(_request.getBody(), boundary, filename, fileContent))
+		{
+			_response.setStatusCode(HTTPError::BAD_REQUEST);
+			_response.setBody(utils::readFile(_getErrorPage(HTTPError::BAD_REQUEST)));
+			return;
+		}
+
+		std::string uploadPath = path;
+		if (!uploadPath.empty() && uploadPath[uploadPath.size() - 1] != '/')
+		{
+			// if target file name is not explicit, treat path as directory
+			struct stat dirSt;
+			if (stat(uploadPath.c_str(), &dirSt) == 0 && S_ISDIR(dirSt.st_mode))
+				uploadPath += "/";
+		}
+
+		if (!uploadPath.empty() && uploadPath[uploadPath.size() - 1] != '/')
+			uploadPath += "/";
+
+		uploadPath += filename;
+
+		created = utils::_writeFile(uploadPath, fileContent);
+		responseBody = "File uploaded";
+	}
+	else
+	{
+		// application/x-www-form-urlencoded or plain body
+		created = utils::_writeFile(path, _request.getBody());
+		responseBody = "Data stored";
+	}
+
+	if (!created)
+	{
+		_response.setStatusCode(HTTPError::FORBIDDEN);
+		_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
+		return;
+	}
+
+	_response.setStatusCode(HTTPResponse::CREATED);
+	_response.setHeader("Content-Type", "text/plain");
+	_response.setBody(responseBody);
 }
 
 void ResponseBuilder::_processDELETE(const ConfigFileParsing::location_t *location)
 {
-	if (location->allowed_methods.count("DELETE") == 0)
-	{
-		_response.setStatusCode(HTTPError::METHOD_NOT_ALLOWED);
-		_response.setBody(utils::readFile(_getErrorPage(HTTPError::METHOD_NOT_ALLOWED)));
-		return;
-	}
+    if (location->allowed_methods.count("DELETE") == 0)
+    {
+        _response.setStatusCode(HTTPError::METHOD_NOT_ALLOWED);
+        _response.setBody(utils::readFile(_getErrorPage(HTTPError::METHOD_NOT_ALLOWED)));
+        return;
+    }
+
+    std::string requestTarget = _stripQueryString(_request.getRequestTarget());
+    std::string path = _resolvePath(requestTarget, location);
+
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0)
+    {
+        _response.setStatusCode(HTTPError::NOT_FOUND);
+        _response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
+        return;
+    }
+
+    // Don't allow deleting directories
+    if (S_ISDIR(st.st_mode))
+    {
+        _response.setStatusCode(HTTPError::FORBIDDEN);
+        _response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
+        return;
+    }
+
+    // Delete the file
+    if (std::remove(path.c_str()) != 0)
+    {
+        _response.setStatusCode(HTTPError::FORBIDDEN);
+        _response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
+        return;
+    }
+
+    // Return 204 No Content on success
+    _response.setStatusCode(HTTPResponse::OK);
 }
 
 void ResponseBuilder::_directoryListing(const std::string &reqLocation, const std::string &fullPath)
@@ -434,4 +532,69 @@ std::string ResponseBuilder::_resolvePath(
 		return (location->root + "/" + suffix);
 
 	return (location->root + suffix);
+}
+
+std::string ResponseBuilder::_stripQueryString(const std::string &uri)
+{
+	std::string::size_type questionPos = uri.find('?');
+	if (questionPos == std::string::npos)
+		return (uri);
+	return (uri.substr(0, questionPos));
+}
+
+std::string ResponseBuilder::_getRequestMediaType(
+	const std::map<std::string, std::string> &contentType)
+{
+	for (std::map<std::string, std::string>::const_iterator it = contentType.begin();
+		 it != contentType.end(); ++it)
+	{
+		if (it->first.find('/') != std::string::npos)
+			return (it->first);
+	}
+	return ("");
+}
+
+bool ResponseBuilder::_parseMultipartFile(
+	const std::string &body,
+	const std::string &boundary,
+	std::string &outFilename,
+	std::string &outContent)
+{
+	std::string delim = "--" + boundary;
+	std::string endDelim = delim + "--";
+
+	std::string::size_type partStart = body.find(delim);
+	if (partStart == std::string::npos)
+		return (false);
+
+	partStart += delim.size();
+	if (body.compare(partStart, 2, "\r\n") == 0)
+		partStart += 2;
+
+	std::string::size_type headersEnd = body.find("\r\n\r\n", partStart);
+	if (headersEnd == std::string::npos)
+		return (false);
+
+	std::string headers = body.substr(partStart, headersEnd - partStart);
+	std::string::size_type filenamePos = headers.find("filename=\"");
+	if (filenamePos == std::string::npos)
+		return (false);
+
+	filenamePos += 10;
+	std::string::size_type filenameEnd = headers.find('"', filenamePos);
+	if (filenameEnd == std::string::npos)
+		return (false);
+
+	outFilename = headers.substr(filenamePos, filenameEnd - filenamePos);
+
+	std::string::size_type contentStart = headersEnd + 4;
+	std::string::size_type partEnd = body.find(delim, contentStart);
+	if (partEnd == std::string::npos)
+		return (false);
+
+	if (partEnd >= 2 && body[partEnd - 2] == '\r' && body[partEnd - 1] == '\n')
+		partEnd -= 2;
+
+	outContent = body.substr(contentStart, partEnd - contentStart);
+	return (true);
 }
