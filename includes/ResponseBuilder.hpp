@@ -14,27 +14,7 @@ public:
 
 	std::string str() const;
 	bool isCGI() const;
-
-private:
-	ResponseBuilder();
-	ResponseBuilder(const ResponseBuilder &obj);
-	ResponseBuilder &operator=(const ResponseBuilder &obj);
-
-	const HTTPRequest &_request;
-	const ConfigFileParsing::server_t &_server;
-	HTTPResponse _response;
-
-	bool _isCGI;
-	int pipeIn[2];
-	int pipeOut[2];
-
-	void _processGET(const ConfigFileParsing::location_t *location);
-	void _processPOST(const ConfigFileParsing::location_t *location);
-	void _processDELETE(const ConfigFileParsing::location_t *location);
-	void _directoryListing(const std::string &reqLocation, const std::string &fullPath);
-	const std::string &_getErrorPage(int code) const;
-	const ConfigFileParsing::location_t *_longestPrefixLocationMatch(
-		const std::string &reqLocation) const;
+	const ConfigFileParsing::location_t *getLocation() const;
 
 	static std::string _getMimeType(const std::string &path);
 	static std::string _resolvePath(
@@ -47,6 +27,26 @@ private:
 		const std::string &boundary,
 		std::string &outFilename,
 		std::string &outContent);
+
+private:
+	ResponseBuilder();
+	ResponseBuilder(const ResponseBuilder &obj);
+	ResponseBuilder &operator=(const ResponseBuilder &obj);
+
+	const HTTPRequest &_request;
+	const ConfigFileParsing::location_t *_location;
+	const ConfigFileParsing::server_t &_server;
+	HTTPResponse _response;
+
+	bool _isCGI;
+
+	void _processGET(const ConfigFileParsing::location_t *location);
+	void _processPOST(const ConfigFileParsing::location_t *location);
+	void _processDELETE(const ConfigFileParsing::location_t *location);
+	void _directoryListing(const std::string &reqLocation, const std::string &fullPath);
+	const std::string &_getErrorPage(int code) const;
+	const ConfigFileParsing::location_t *_longestPrefixLocationMatch(
+		const std::string &reqLocation) const;
 };
 
 #endif /* RESPONSE_BUILDER_HPP */
