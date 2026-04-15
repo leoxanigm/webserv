@@ -201,6 +201,18 @@ void Connection::_removePollFd(std::size_t index)
 	_pollFds.pop_back();
 }
 
+void Connection::_removePollFdByFd(int fd)
+{
+	for (std::size_t i = 0; i < _pollFds.size(); ++i)
+	{
+		if (_pollFds[i].fd == fd)
+		{
+			_removePollFd(i);
+			return;
+		}
+	}
+}
+
 void Connection::_processConnections()
 {
 	int fd;
@@ -283,6 +295,32 @@ void Connection::_handleNewConnection(int socketFd)
 	// Or create a Logger which will log output info, error, warning to file
 }
 
+// int Connection::_handleClient(int fd, short event)
+// {
+// 	Client *client = _findClient(fd);
+// 	if (!client)
+// 		return (-1);
+
+// 	int status = 0;
+
+// 	if (event & POLLIN)
+// 		status = client->handleRead(fd);
+
+// 	if (event & POLLOUT)
+// 		status = client->handleWrite(fd);
+
+// 	if (client->getState() == Client::READ_PIPE)
+// 		_setFdPollEvent(client->getPipeReadFd(), POLLIN);
+
+// 	if (client->getState() == Client::WRITE_PIPE)
+// 		_setFdPollEvent(client->getPipeWriteFd(), POLLOUT);
+
+// 	if (client->getState() == Client::CLOSE_CONNECTION)
+// 		status = -1;
+
+// 	return (status);
+// }
+
 int Connection::_handleClient(int fd, short event)
 {
 	Client *client = _findClient(fd);
@@ -294,17 +332,54 @@ int Connection::_handleClient(int fd, short event)
 	if (event & POLLIN)
 		status = client->handleRead(fd);
 
+	if (event & POLLIN)
+		status = client->handleRead(fd);
+
+	if (fd == client->getPipeReadFd() && client->getState() == Client::SEND_RESPONSE)
+	{
+		client->closePipeReadFd();
+		_removePollFdByFd(fd);
+		return 0;
+	}
+
 	if (event & POLLOUT)
 		status = client->handleWrite(fd);
 
-	if (client->getState() == Client::READ_PIPE)
+	// Do we have a read CGI pipe?
+	int pr = client->getPipeReadFd();
+	if (pr > -1 && _clientFds.find(pr) == _clientFds.end())
+	{
+		_addPollFd(pr, POLLIN);
+		FdEntry e;
+		e.type = FD_PIPE_READ;
+		e.client = client;
+		_clientFds[pr] = e;
+	}
+
+	// Do we have a write CGI pipe?
+	int pw = client->getPipeWriteFd();
+	if (pw > -1 && _clientFds.find(pw) == _clientFds.end())
+	{
+		_addPollFd(pw, POLLOUT);
+		FdEntry e;
+		e.type = FD_PIPE_WRITE;
+		e.client = client;
+		_clientFds[pw] = e;
+	}
+
+	if (client->hasActivePipeRead())
 		_setFdPollEvent(client->getPipeReadFd(), POLLIN);
 
-	if (client->getState() == Client::WRITE_PIPE)
+	if (client->hasActivePipeWrite())
 		_setFdPollEvent(client->getPipeWriteFd(), POLLOUT);
+
+	if (client->getState() == Client::SEND_RESPONSE)
+		_setFdPollEvent(client->getConnFd(), POLLOUT);
+	else
+		_setFdPollEvent(client->getConnFd(), POLLIN);
 
 	if (client->getState() == Client::CLOSE_CONNECTION)
 		status = -1;
 
-	return (status);
+	return status;
 }

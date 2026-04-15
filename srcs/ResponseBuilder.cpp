@@ -18,6 +18,7 @@ ResponseBuilder::ResponseBuilder(
 	: _request(req), _server(server)
 {
 	_isCGI = false;
+	_location = 0;
 
 	if (!_request.isValid())
 	{
@@ -35,30 +36,13 @@ ResponseBuilder::ResponseBuilder(
 		}
 		else
 		{
+			_location = location;
+
 			if (location->is_cgi)
 			{
-				bool pipeErr = false;
-				if (pipe(pipeIn) == -1)
-					pipeErr = true;
-				if (!pipeErr && pipe(pipeOut) == -1)
-				{
-					close(pipeIn[0]);
-					close(pipeIn[1]);
-					pipeErr = true;
-				}
-
-				if (pipeErr)
-				{
-					_response.setStatusCode(HTTPError::INTERNAL_SERVER_ERROR);
-					_response.setBody(utils::readFile(_getErrorPage(HTTPError::INTERNAL_SERVER_ERROR)));
-					return ;
-				}
-
 				_isCGI = true;
 			}
-
-			// handle redirect first
-			if (location->return_code == 301 || location->return_code == 308)
+			else if (location->return_code == 301 || location->return_code == 308) // handle redirect first
 			{
 				_response.setStatusCode(HTTPResponse::PERMANENT_REDIRECT);
 				_response.setHeader("Location", location->return_location);
@@ -101,6 +85,11 @@ bool ResponseBuilder::isCGI() const
 	return (_isCGI);
 }
 
+const ConfigFileParsing::location_t *ResponseBuilder::getLocation() const
+{
+	return (_location);
+}
+
 void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 {
 	if (location->allowed_methods.count("GET") == 0)
@@ -112,6 +101,8 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 
 	std::string requestTarget = _stripQueryString(_request.getRequestTarget());
 	std::string path = _resolvePath(requestTarget, location);
+
+	std::cout << requestTarget << " " << path << '\n';
 
 	if (location->is_cgi)
 	{

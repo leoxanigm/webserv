@@ -5,6 +5,7 @@
 
 #include "./parsing/ConfigFileParsing.hpp"
 #include "./parsing/HTTPRequestParser.hpp"
+#include "./CGIHandler.hpp"
 
 class Client
 {
@@ -34,6 +35,10 @@ public:
 
 	State getState() const;
 
+	// lets Connection know when to add/remove poll fds
+	bool hasActivePipeRead() const;
+	bool hasActivePipeWrite() const;
+
 private:
 	Client();
 	Client(const Client &obj);
@@ -47,9 +52,16 @@ private:
 	int _pipeWriteFd;
 	std::string _inBuffer;
 	std::string _outBuffer;
-
 	std::size_t _sentSize;
 	State _state;
+
+	// CGI
+	CGIHandler _cgi;
+	bool _isCGI;
+	std::size_t _cgiBodyOffset;
+	std::string _cgiRawOutput;
+
+	void _finalizeCGIResponse();
 };
 
 #endif /* CLIENT_HPP */

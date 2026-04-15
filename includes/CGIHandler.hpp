@@ -6,58 +6,65 @@
 #include <map>
 #include <sys/types.h>
 
+#include "./parsing/HTTPRequestParser.hpp"
+#include "HTTPResponse.hpp"
+
 class CGIHandler
 {
 public:
 	CGIHandler();
 	~CGIHandler();
 
-	bool init(const std::vector<std::string> &argv,
-	          const std::map<std::string, std::string> &env,
-	          const std::string &workingDir);
+	bool startCGI(const ConfigFileParsing::location_t *location, const HTTPRequest &req);
 
-	int     getReadFd() const;
-	int     getWriteFd() const;
-	pid_t   getPid() const;
+	int getReadFd() const;
+	int getWriteFd() const;
+	pid_t getPid() const;
 
-	ssize_t writeInput(const char *buf, size_t len);
-	ssize_t readOutput(char *buf, size_t len);
+	ssize_t writeInput(const char *buf, std::size_t len);
+	ssize_t readOutput(char *buf, std::size_t len);
 
-	void    closeWriteFd();
-	void    closeReadFd();
+	void closeWriteFd();
+	void closeReadFd();
 
-	bool    isWriteClosed() const;
-	bool    isReadClosed() const;
-	bool    isChildExited() const;
+	bool isWriteClosed() const;
+	bool isReadClosed() const;
+	bool isChildExited() const;
 
-	int     pollChild();
-	int     waitChild();
-	int     getExitStatus() const;
+	int reapChildNonBlocking();
+	int waitChild();
+	int getExitStatus() const;
 
-	void    terminate();
+	void terminate();
 
 private:
 	CGIHandler(const CGIHandler &rhs);
 	CGIHandler &operator=(const CGIHandler &rhs);
 
-	bool setNonBlocking(int fd);
-	bool setCloseOnExec(int fd);
-	void closeFd(int &fd);
-	void cleanupParentSide();
+	HTTPResponse _response;
 
-	char **buildArgv(const std::vector<std::string> &argv) const;
-	char **buildEnvp(const std::map<std::string, std::string> &env) const;
-	void   freeCStringArray(char **arr) const;
-
-private:
-	int   _readFd;
-	int   _writeFd;
+	int _readFd;
+	int _writeFd;
 	pid_t _pid;
 
 	bool _readClosed;
 	bool _writeClosed;
 	bool _childExited;
-	int  _waitStatus;
+	int _waitStatus;
+
+	bool _init(const std::vector<std::string> &argv,
+			  const std::map<std::string, std::string> &env,
+			  const std::string &workingDir);
+
+	static void _buildArgv(
+		const std::vector<std::string> &argv, std::vector<char *> &execArgv);
+	static void _buildEnvp(
+		const std::map<std::string, std::string> &env,
+		std::vector<std::string> &tempEnv,
+		std::vector<char *> &execEnv);
+	static std::string _methodToString(const HTTPRequest &req);
+	static std::string _extractQueryString(const std::string &uri);
+	static std::string _contentLenString(const HTTPRequest &req);
 };
 
 #endif // CGIHANDLER_HPP

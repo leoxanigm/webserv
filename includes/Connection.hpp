@@ -63,6 +63,7 @@ private:
 	void _closeClientFd(Client *client, FdType type);
 	void _removeClient(int fd);
 	void _removePollFd(std::size_t index);
+	void _removePollFdByFd(int fd);
 
 	void _processConnections();
 	void _handleNewConnection(int socketFd);
