@@ -1,3 +1,4 @@
+#include <string>
 #include <vector>
 #include <map>
 #include <sstream>
@@ -47,10 +48,28 @@ bool CGIHandler::startCGI(const ConfigFileParsing::location_t *location, const H
 {
 	std::string requestPath = ResponseBuilder::_stripQueryString(req.getRequestTarget());
 	std::string scriptPath = ResponseBuilder::_resolvePath(requestPath, location);
-	std::string scriptBasename = scriptPath.substr(scriptPath.find_last_of('/') + 1);
+	std::string scriptBasename = scriptPath;
+
+	// TODO
+	// http://localhost:8080/python?test=true doesn't work
+	// but http://localhost:8080/python/?test=true does
+	// also query strings on normal GET not working
+
+	// plus, add default error page html files
+
+	if ((location->cgi_type == PHP && (scriptBasename.find(".php") == std::string::npos)) ||
+		(location->cgi_type == PYTHON && (scriptBasename.find(".py") == std::string::npos)))
+	{
+		if (scriptBasename[scriptBasename.size() - 1] == '/')
+			scriptBasename += location->index;
+		else
+			scriptBasename += "/" + location->index;
+	}
+
+	scriptBasename = scriptBasename.substr(scriptBasename.find_last_of('/') + 1);
 
 	std::vector<std::string> argv;
-	argv.push_back(location->cgi_location); // cgi path from config
+	argv.push_back(location->cgi_location);
 	argv.push_back(scriptBasename);
 
 	std::map<std::string, std::string> env;
@@ -62,27 +81,12 @@ bool CGIHandler::startCGI(const ConfigFileParsing::location_t *location, const H
 	env["CONTENT_LENGTH"] = _contentLenString(req);
 	env["CONTENT_TYPE"] = ResponseBuilder::_getRequestMediaType(req.getContentType());
 	env["REQUEST_URI"] = req.getRequestTarget();
-	env["SCRIPT_FILENAME"] = scriptPath;
+	env["SCRIPT_FILENAME"] = scriptBasename;
 	env["REDIRECT_STATUS"] = "200";
 
 	if (!_init(argv, env, location->root))
 		return (false);
 
-	// _pipeReadFd = _cgi.getReadFd();
-	// _pipeWriteFd = _cgi.getWriteFd();
-	// _cgiBodyOffset = 0;
-	// _cgiRawOutput.clear();
-	// _isCGI = true;
-
-	// const std::string &body = _req.getBody();
-	// if (!body.empty())
-	// 	_state = WRITE_PIPE;
-	// else
-	// {
-	// 	_cgi.closeWriteFd();
-	// 	_pipeWriteFd = -1;
-	// 	_state = READ_PIPE;
-	// }
 	return (true);
 }
 
@@ -120,7 +124,7 @@ std::string CGIHandler::_methodToString(const HTTPRequest &req)
 	case DELETE:
 		return "DELETE";
 	}
-	return "GET";
+	return ("GET");
 }
 
 std::string CGIHandler::_extractQueryString(const std::string &uri)
@@ -128,7 +132,7 @@ std::string CGIHandler::_extractQueryString(const std::string &uri)
 	std::string::size_type q = uri.find('?');
 	if (q == std::string::npos)
 		return "";
-	return uri.substr(q + 1);
+	return (uri.substr(q + 1));
 }
 
 std::string CGIHandler::_contentLenString(const HTTPRequest &req)
@@ -178,7 +182,6 @@ bool CGIHandler::_init(const std::vector<std::string> &argv,
 		close(stdinPipe[1]);
 		close(stdoutPipe[0]);
 		close(stdoutPipe[1]);
-		_pid = -1;
 
 		return (false);
 	}
@@ -190,13 +193,6 @@ bool CGIHandler::_init(const std::vector<std::string> &argv,
 			if (chdir(workingDir.c_str()) == -1)
 				std::exit(127);
 		}
-
-		char temp[255];
-		std::cout << getcwd(temp, 255) << "\n";
-		std::cout << "-- " << execArgv[0] << "\n";
-		std::cout << "-- " << execArgv[1] << "\n\n";
-		for (std::size_t i = 0; execEnv[i] != NULL; i++)
-			std::cout << "-- " << execEnv[i] << "\n";
 
 		close(stdinPipe[1]);
 		close(stdoutPipe[0]);

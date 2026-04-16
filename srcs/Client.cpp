@@ -16,7 +16,7 @@
 Client::Client(int connFd, const ConfigFileParsing::server_t &server)
 	: _server(server), _connFd(connFd), _pipeReadFd(-1), _pipeWriteFd(-1),
 	  _inBuffer(""), _outBuffer(""), _sentSize(0), _state(RECV_REQUEST),
-	  _isCGI(false), _cgiBodyOffset(0), _cgiRawOutput("")
+	  _isCGI(false), _cgiBodyOffset(0), _requestBodyOffset(0), _cgiRawOutput("")
 {
 }
 
@@ -32,6 +32,7 @@ Client::~Client()
 
 void Client::_finalizeCGIResponse()
 {
+
 	HTTPResponse resp;
 	resp.setStatusCode(HTTPResponse::OK);
 
@@ -73,7 +74,7 @@ void Client::_finalizeCGIResponse()
 int Client::handleRead(int fd)
 {
 	if (_state != RECV_REQUEST && _state != READ_PIPE)
-		return 0;
+		return (0);
 
 	if (_state == RECV_REQUEST && fd == _connFd)
 	{
@@ -110,20 +111,17 @@ int Client::handleRead(int fd)
 					const std::string &body = _req.getBody();
 					if (!body.empty())
 						_state = WRITE_PIPE;
-					else // GET request, close read right away for EOF
-					{
-						_cgi.closeWriteFd();
-						_pipeWriteFd = -1;
+					else
 						_state = READ_PIPE;
-					}
 				}
 				else
 				{
-					// TODO
-					// _outBuffer = _cgi.getErrResponse();
-					// _state = SEND_RESPONSE;
-					_state = CLOSE_CONNECTION;
-					return (-1);
+					ResponseBuilder errResp(_req, _server);
+					errResp.buildErrorRes(HTTPError::INTERNAL_SERVER_ERROR);
+
+					_outBuffer = errResp.str();
+					_state = SEND_RESPONSE;
+					return (1);
 				}
 			}
 			else
@@ -137,8 +135,6 @@ int Client::handleRead(int fd)
 
 	if (_state == READ_PIPE && fd == _pipeReadFd)
 	{
-		std::cout << "== handleRead, READ_PIPE" << "\n";
-
 		char buff[4096];
 		ssize_t n = _cgi.readOutput(buff, sizeof(buff));
 
@@ -148,78 +144,67 @@ int Client::handleRead(int fd)
 			return static_cast<int>(n);
 		}
 
-		std::cout << _cgiRawOutput << "\n";
-
-		// EOF => CGI done writing
+		// CGI done writing
 		if (n == 0)
 		{
 			_cgi.reapChildNonBlocking();
 			_finalizeCGIResponse();
-			return 0;
+
+			return (0);
 		}
 
-		// n < 0
-		if (errno == EAGAIN || errno == EWOULDBLOCK)
-			return 0;
-
 		_state = CLOSE_CONNECTION;
-		return -1;
+		return (-1);
 	}
 
-	return 0;
+	return (0);
 }
 
 int Client::handleWrite(int fd)
 {
 	if (_state != SEND_RESPONSE && _state != WRITE_PIPE)
-		return 0;
+		return (0);
 
 	if (_state == WRITE_PIPE && fd == _pipeWriteFd)
 	{
-		std::cout << "== handleWrite, WRITE_PIPE" << "\n";
-
-		const std::string &body = _req.getBody();
-		if (_cgiBodyOffset >= body.size())
+		if (_requestBodyOffset >= _req.getBody().size())
 		{
-			_cgi.closeWriteFd();
-			_pipeWriteFd = -1;
 			_state = READ_PIPE;
-			return 0;
+			return (0);
 		}
 
-		ssize_t n = _cgi.writeInput(body.c_str() + _cgiBodyOffset, body.size() - _cgiBodyOffset);
-		if (n > 0)
+		ssize_t n = _cgi.writeInput(
+			_req.getBody().c_str() + _requestBodyOffset,
+			_req.getBody().size() - _requestBodyOffset);
+
+		if (n < 0)
+			return -1;
+
+		_requestBodyOffset += n;
+
+		if (_requestBodyOffset >= _req.getBody().size())
 		{
-			_cgiBodyOffset += static_cast<std::size_t>(n);
-			if (_cgiBodyOffset >= body.size())
-			{
-				_cgi.closeWriteFd();
-				_pipeWriteFd = -1;
-				_state = READ_PIPE;
-			}
-			return static_cast<int>(n);
+			_state = READ_PIPE;
+			return (0);
 		}
 
-		if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
-			return 0;
-
-		_state = CLOSE_CONNECTION;
-		return -1;
+		return (0);
 	}
 
 	if (_state == SEND_RESPONSE && fd == _connFd)
 	{
+
 		if (_outBuffer.empty())
 		{
 			_state = CLOSE_CONNECTION;
-			return 0;
+			return (0);
 		}
 
 		ssize_t send_res = send(fd, _outBuffer.c_str(), _outBuffer.length(), 0);
 		if (send_res == -1)
 		{
 			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				return 0;
+				return (0);
 			return -1;
 		}
 
@@ -230,7 +215,7 @@ int Client::handleWrite(int fd)
 		return static_cast<int>(send_res);
 	}
 
-	return 0;
+	return (0);
 }
 
 int Client::getConnFd() const { return _connFd; }
@@ -254,11 +239,13 @@ void Client::closePipeReadFd()
 void Client::closePipeWriteFd()
 {
 	if (_pipeWriteFd > -1)
-		close(_pipeWriteFd);
+		_cgi.closeWriteFd();
 	_pipeWriteFd = -1;
 }
 
 Client::State Client::getState() const { return _state; }
+
+void Client::setState(State state) { _state = state; }
 
 bool Client::hasActivePipeRead() const
 {

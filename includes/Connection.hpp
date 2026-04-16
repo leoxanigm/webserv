@@ -58,16 +58,18 @@ private:
 	void _setFdPollEvent(int fd, short event);
 
 	void _addPollFd(int fd, short event);
+	bool _hasPollFd(int fd) const;
 	void _addClient(int fd, const ConfigFileParsing::server_t *server);
+	void _addClientFd(int fd, Client *client, FdType type);
 	Client *_findClient(int fd) const;
 	void _closeClientFd(Client *client, FdType type);
 	void _removeClient(int fd);
 	void _removePollFd(std::size_t index);
-	void _removePollFdByFd(int fd);
+	void _removePollFd(int fd);
 
 	void _processConnections();
 	void _handleNewConnection(int socketFd);
-	int _handleClient(int fd, short event);
+	int _handleClient(int fd, short revents);
 };
 
 #endif /* CONNECTION_HPP */

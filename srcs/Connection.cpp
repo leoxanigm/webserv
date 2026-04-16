@@ -114,6 +114,16 @@ void Connection::_addPollFd(int fd, short event)
 	_pollFds.push_back(newPFd);
 }
 
+bool Connection::_hasPollFd(int fd) const
+{
+	for (std::size_t i = 0; i < _pollFds.size(); ++i)
+	{
+		if (_pollFds[i].fd == fd)
+			return (true);
+	}
+	return (false);
+}
+
 void Connection::_addClient(int fd, const ConfigFileParsing::server_t *server)
 {
 	Client *client = new Client(fd, *server);
@@ -121,6 +131,17 @@ void Connection::_addClient(int fd, const ConfigFileParsing::server_t *server)
 
 	FdEntry entry;
 	entry.type = FD_CLIENT_CONN;
+	entry.client = client;
+	_clientFds[fd] = entry;
+}
+
+void Connection::_addClientFd(int fd, Client *client, FdType type)
+{
+	if (fd < 0)
+		return;
+
+	FdEntry entry;
+	entry.type = type;
 	entry.client = client;
 	_clientFds[fd] = entry;
 }
@@ -181,7 +202,7 @@ void Connection::_removePollFd(std::size_t index)
 	_pollFds.pop_back();
 }
 
-void Connection::_removePollFdByFd(int fd)
+void Connection::_removePollFd(int fd)
 {
 	for (std::size_t i = 0; i < _pollFds.size(); ++i)
 	{
@@ -197,53 +218,36 @@ void Connection::_processConnections()
 {
 	int fd;
 	short revents;
-	bool removeClient;
-	Client *client;
+	// bool removeClient;
+	// Client *client;
 
 	for (std::size_t i = 0; i < _pollFds.size();)
 	{
+		if (_pollFds[i].revents == 0)
+		{
+			i++;
+			continue;
+		}
+
 		fd = _pollFds[i].fd;
 		revents = _pollFds[i].revents;
-		removeClient = false;
-		client = 0;
+		// removeClient = false;
+		// client = 0;
 
-		if (revents & POLLERR)
+		if (_sockets.find(fd) != _sockets.end())
 		{
-			// std::cout << "POLLERR" << '\n';
-			removeClient = true;
+			if (revents & POLLIN) // New connection
+				_handleNewConnection(fd);
 		}
 		else
 		{
-			if (revents & POLLIN)
-			{
-				// std::cout << "POLLIN" << '\n';
-				if (_sockets.find(fd) != _sockets.end()) // New connection
-					_handleNewConnection(fd);
-				else if (_handleClient(fd, POLLIN) == -1)
-					removeClient = true;
-			}
+			int status = _handleClient(fd, revents);
 
-			if (!removeClient && (revents & POLLOUT))
+			if (status == -1)
 			{
-				// std::cout << "POLLOUT" << '\n';
-				if (_handleClient(fd, POLLOUT) == -1)
-					removeClient = true;
+				_removePollFd(fd);
+				continue;
 			}
-
-			if (!removeClient && (revents & POLLHUP))
-			{
-				// std::cout << "POLLHUP" << '\n';
-				client = _findClient(fd);
-				if (client && client->getState() == Client::CLOSE_CONNECTION)
-					removeClient = true;
-			}
-		}
-
-		if (removeClient)
-		{
-			// std::cout << "removeClient" << '\n';
-			_removePollFd(i);
-			continue; // Don't skip the current index on removal
 		}
 
 		i++;
@@ -267,7 +271,7 @@ void Connection::_handleNewConnection(int socketFd)
 		return;
 	}
 
-	_addPollFd(clientFd, POLLIN | POLLOUT);
+	_addPollFd(clientFd, POLLIN);
 	_addClient(clientFd, _sockets[socketFd]);
 
 	std::cout << "INFO: new connection on socket " << socketFd << '\n';
@@ -301,7 +305,7 @@ void Connection::_handleNewConnection(int socketFd)
 // 	return (status);
 // }
 
-int Connection::_handleClient(int fd, short event)
+int Connection::_handleClient(int fd, short revents)
 {
 	Client *client = _findClient(fd);
 	if (!client)
@@ -309,57 +313,93 @@ int Connection::_handleClient(int fd, short event)
 
 	int status = 0;
 
-	if (event & POLLIN)
-		status = client->handleRead(fd);
-
-	if (event & POLLIN)
-		status = client->handleRead(fd);
-
-	if (fd == client->getPipeReadFd() && client->getState() == Client::SEND_RESPONSE)
+	// CGI stdout pipe
+	if (fd == client->getPipeReadFd())
 	{
-		client->closePipeReadFd();
-		_removePollFdByFd(fd);
-		return 0;
+		if (revents & (POLLIN | POLLHUP))
+			status = client->handleRead(fd);
+
+		if (client->getState() == Client::SEND_RESPONSE ||
+			client->getState() == Client::CLOSE_CONNECTION)
+		{
+			_removePollFd(fd);
+		}
+
+		if (client->getState() == Client::SEND_RESPONSE)
+		{
+			_setFdPollEvent(client->getConnFd(), POLLOUT);
+		}
+
+		return (status);
 	}
 
-	if (event & POLLOUT)
+	// CGI stdin pipe
+	if (fd == client->getPipeWriteFd())
+	{
+		if (revents & POLLOUT)
+			status = client->handleWrite(fd);
+
+		if (revents & (POLLHUP | POLLERR))
+			client->setState(Client::READ_PIPE);
+
+		if (client->getState() == Client::READ_PIPE ||
+			client->getState() == Client::CLOSE_CONNECTION)
+		{
+			_removePollFd(fd);
+		}
+
+		return (status);
+	}
+
+	// Normal client socket read
+	if (fd == client->getConnFd() && revents & POLLIN)
+		status = client->handleRead(fd);
+
+	// After handleRead(), CGI may have started.
+	// Register the correct CGI pipe fd.
+	if (client->getState() == Client::WRITE_PIPE)
+	{
+		int pipeWriteFd = client->getPipeWriteFd();
+
+		if (pipeWriteFd >= 0 && !_hasPollFd(pipeWriteFd))
+		{
+			_addClientFd(pipeWriteFd, client, FD_PIPE_WRITE);
+			_addPollFd(pipeWriteFd, POLLOUT);
+		}
+	}
+	else if (client->getState() == Client::READ_PIPE)
+	{
+		int pipeWriteFd = client->getPipeWriteFd();
+		int pipeReadFd = client->getPipeReadFd();
+
+		// For GET/no-body CGI, close CGI stdin so it receives EOF
+		if (pipeWriteFd >= 0)
+			client->closePipeWriteFd();
+
+		if (pipeReadFd >= 0 && !_hasPollFd(pipeReadFd))
+		{
+			_addClientFd(pipeReadFd, client, FD_PIPE_READ);
+			_addPollFd(pipeReadFd, POLLIN);
+		}
+	}
+
+	// Normal client socket write.
+	if (fd == client->getConnFd() && revents & POLLOUT)
 		status = client->handleWrite(fd);
 
-	// Do we have a read CGI pipe?
-	int pr = client->getPipeReadFd();
-	if (pr > -1 && _clientFds.find(pr) == _clientFds.end())
-	{
-		_addPollFd(pr, POLLIN);
-		FdEntry e;
-		e.type = FD_PIPE_READ;
-		e.client = client;
-		_clientFds[pr] = e;
-	}
-
-	// Do we have a write CGI pipe?
-	int pw = client->getPipeWriteFd();
-	if (pw > -1 && _clientFds.find(pw) == _clientFds.end())
-	{
-		_addPollFd(pw, POLLOUT);
-		FdEntry e;
-		e.type = FD_PIPE_WRITE;
-		e.client = client;
-		_clientFds[pw] = e;
-	}
-
-	if (client->hasActivePipeRead())
-		_setFdPollEvent(client->getPipeReadFd(), POLLIN);
-
-	if (client->hasActivePipeWrite())
-		_setFdPollEvent(client->getPipeWriteFd(), POLLOUT);
-
 	if (client->getState() == Client::SEND_RESPONSE)
+	{
 		_setFdPollEvent(client->getConnFd(), POLLOUT);
-	else
-		_setFdPollEvent(client->getConnFd(), POLLIN);
+	}
 
 	if (client->getState() == Client::CLOSE_CONNECTION)
 		status = -1;
 
-	return status;
+	if (revents & (POLLHUP | POLLERR | POLLNVAL))
+	{
+		client->setState(Client::CLOSE_CONNECTION);
+		status = -1;
+	}
+
+	return (status);
 }
