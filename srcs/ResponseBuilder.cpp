@@ -1,3 +1,6 @@
+#include <string>
+#include <vector>
+#include <map>
 #include <sstream>
 #include <ctime>
 #include <cstring>
@@ -40,7 +43,13 @@ ResponseBuilder::ResponseBuilder(
 
 			if (location->is_cgi)
 			{
-				_isCGI = true;
+				if (_isValidCGIScript())
+					_isCGI = true;
+				else
+				{
+					_response.setStatusCode(HTTPError::NOT_FOUND);
+					_response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
+				}
 			}
 			else if (location->return_code == 301 || location->return_code == 308) // handle redirect first
 			{
@@ -74,6 +83,12 @@ ResponseBuilder::ResponseBuilder(
 }
 
 ResponseBuilder::~ResponseBuilder() {}
+
+void ResponseBuilder::buildErrorRes(int code)
+{
+	_response.setStatusCode(code);
+	_response.setBody(utils::readFile(_getErrorPage(code)));
+}
 
 std::string ResponseBuilder::str() const
 {
@@ -470,6 +485,38 @@ ResponseBuilder::_longestPrefixLocationMatch(const std::string &reqURI) const
 	}
 
 	return (location);
+}
+
+bool ResponseBuilder::_isValidCGIScript() const
+{
+	std::string requestPath = ResponseBuilder::_stripQueryString(_request.getRequestTarget());
+	std::string scriptPath = ResponseBuilder::_resolvePath(requestPath, _location);
+	// std::string path = scriptPath.substr(scriptPath.find_last_of('/') + 1);
+	std::string path = scriptPath;
+
+	if ((_location->cgi_type == PHP && (path.find(".php") == std::string::npos)) ||
+		(_location->cgi_type == PYTHON && (path.find(".py") == std::string::npos)))
+	{
+		if (path[path.size() - 1] == '/')
+			path += _location->index;
+		else
+			path += "/" + _location->index;
+	}
+
+	if (access(path.c_str(), F_OK) == -1)
+		return (false);
+
+	if (access(path.c_str(), R_OK) == -1)
+		return (false);
+
+	struct stat st;
+	if (stat(path.c_str(), &st) == -1)
+		return (false);
+
+	if (!S_ISREG(st.st_mode))
+		return (false);
+
+	return (true);
 }
 
 std::string ResponseBuilder::_getMimeType(const std::string &path)

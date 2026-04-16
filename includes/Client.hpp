@@ -34,6 +34,7 @@ public:
 	void closePipeWriteFd();
 
 	State getState() const;
+	void setState(State state);
 
 	// lets Connection know when to add/remove poll fds
 	bool hasActivePipeRead() const;
@@ -59,6 +60,7 @@ private:
 	CGIHandler _cgi;
 	bool _isCGI;
 	std::size_t _cgiBodyOffset;
+	std::size_t _requestBodyOffset;
 	std::string _cgiRawOutput;
 
 	void _finalizeCGIResponse();

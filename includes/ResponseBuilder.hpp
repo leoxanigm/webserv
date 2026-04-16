@@ -12,6 +12,7 @@ public:
 		const HTTPRequest &req, const ConfigFileParsing::server_t &server);
 	~ResponseBuilder();
 
+	void buildErrorRes(int code);
 	std::string str() const;
 	bool isCGI() const;
 	const ConfigFileParsing::location_t *getLocation() const;
@@ -47,6 +48,7 @@ private:
 	const std::string &_getErrorPage(int code) const;
 	const ConfigFileParsing::location_t *_longestPrefixLocationMatch(
 		const std::string &reqLocation) const;
+	bool _isValidCGIScript() const;
 };
 
 #endif /* RESPONSE_BUILDER_HPP */
