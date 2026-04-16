@@ -16,7 +16,6 @@
 # include <list>
 # include <set>
 # include <string>
-# include <cerrno>
 # include <clocale>
 # include <vector>
 # include <algorithm>

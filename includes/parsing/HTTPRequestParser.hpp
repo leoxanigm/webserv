@@ -15,7 +15,6 @@
 
 # include <map>
 # include <string>
-#include <cerrno>
 #include <clocale>
 #include <cstdlib>
 #include <algorithm>
