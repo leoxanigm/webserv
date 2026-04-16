@@ -6,7 +6,6 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <cerrno>
 #include <cstring>
 #include <cstdlib>
 

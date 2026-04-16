@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <cstring>
-#include <cerrno>
 
 #include "../includes/Client.hpp"
 #include "../includes/HTTPError.hpp"
@@ -86,7 +85,7 @@ int Client::handleRead(int fd)
 			closePipeReadFd();
 			closePipeWriteFd();
 			_state = CLOSE_CONNECTION;
-			return -1;
+			return (-1);
 		}
 
 		_inBuffer.append(buff, static_cast<std::size_t>(n));
@@ -130,7 +129,7 @@ int Client::handleRead(int fd)
 				_state = SEND_RESPONSE;
 			}
 		}
-		return static_cast<int>(n);
+		return (static_cast<int>(n));
 	}
 
 	if (_state == READ_PIPE && fd == _pipeReadFd)
@@ -141,7 +140,7 @@ int Client::handleRead(int fd)
 		if (n > 0)
 		{
 			_cgiRawOutput.append(buff, static_cast<std::size_t>(n));
-			return static_cast<int>(n);
+			return (static_cast<int>(n));
 		}
 
 		// CGI done writing
@@ -178,7 +177,7 @@ int Client::handleWrite(int fd)
 			_req.getBody().size() - _requestBodyOffset);
 
 		if (n < 0)
-			return -1;
+			return (-1);
 
 		_requestBodyOffset += n;
 
@@ -201,26 +200,22 @@ int Client::handleWrite(int fd)
 		}
 
 		ssize_t send_res = send(fd, _outBuffer.c_str(), _outBuffer.length(), 0);
-		if (send_res == -1)
-		{
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				return (0);
-			return -1;
-		}
+		if (send_res <= 0)
+			return (-1);
 
 		_outBuffer.erase(0, static_cast<std::size_t>(send_res));
 		if (_outBuffer.empty())
 			_state = CLOSE_CONNECTION;
 
-		return static_cast<int>(send_res);
+		return (static_cast<int>(send_res));
 	}
 
 	return (0);
 }
 
-int Client::getConnFd() const { return _connFd; }
-int Client::getPipeReadFd(void) const { return _pipeReadFd; }
-int Client::getPipeWriteFd(void) const { return _pipeWriteFd; }
+int Client::getConnFd() const { return (_connFd); }
+int Client::getPipeReadFd(void) const { return (_pipeReadFd); }
+int Client::getPipeWriteFd(void) const { return (_pipeWriteFd); }
 
 void Client::closeConnFd()
 {
@@ -243,7 +238,7 @@ void Client::closePipeWriteFd()
 	_pipeWriteFd = -1;
 }
 
-Client::State Client::getState() const { return _state; }
+Client::State Client::getState() const { return (_state); }
 
 void Client::setState(State state) { _state = state; }
 
