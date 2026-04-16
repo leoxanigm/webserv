@@ -49,10 +49,36 @@ void Client::_finalizeCGIResponse()
 		std::string headers = _cgiRawOutput.substr(0, pos);
 		std::string body = _cgiRawOutput.substr(pos + sepLen);
 
-		if (headers.find("Content-type:") != std::string::npos ||
-			headers.find("Content-Type:") != std::string::npos)
-			resp.setHeader("Content-Type", "text/html");
-		else
+		bool hasContentType = false;
+		std::istringstream headerStream(headers);
+		std::string line;
+		while (std::getline(headerStream, line))
+		{
+			if (!line.empty() && line[line.size() - 1] == '\r')
+				line.erase(line.size() - 1);
+			std::string::size_type colon = line.find(':');
+			if (colon == std::string::npos)
+				continue;
+			std::string key = line.substr(0, colon);
+			std::string value = line.substr(colon + 1);
+			std::string::size_type start = value.find_first_not_of(" \t");
+			if (start != std::string::npos)
+				value = value.substr(start);
+			std::string lkey = key;
+			for (std::size_t i = 0; i < lkey.size(); ++i)
+				lkey[i] = static_cast<char>(::tolower(static_cast<unsigned char>(lkey[i])));
+			if (lkey == "status")
+			{
+				int code = std::atoi(value.c_str());
+				if (code >= 200 && code <= 505)
+					resp.setStatusCode(code);
+				continue;
+			}
+			resp.setHeader(key, value);
+			if (lkey == "content-type")
+				hasContentType = true;
+		}
+		if (!hasContentType)
 			resp.setHeader("Content-Type", "text/html");
 
 		resp.setBody(body);

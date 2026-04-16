@@ -1,5 +1,4 @@
 <!doctype html>
-<!--- This page was generated using Claude Sonnet 4.6 and must be used to test webserv's features. -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -14,7 +13,6 @@
         --border: #1e2d3a;
         --accent: #00e5c8;
         --accent2: #ff5f3e;
-        --dim: #3a5060;
         --text: #c8dde8;
         --text-dim: #4a6070;
         --green: #39ff86;
@@ -22,13 +20,7 @@
         --red: #ff4444;
       }
 
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
       body {
         background: var(--bg);
@@ -39,34 +31,18 @@
         overflow-x: hidden;
       }
 
-      /* Scanline overlay */
       body::before {
         content: '';
         position: fixed;
         inset: 0;
         background: repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 2px,
-          rgba(0, 0, 0, 0.07) 2px,
-          rgba(0, 0, 0, 0.07) 4px
+          0deg, transparent, transparent 2px,
+          rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px
         );
         pointer-events: none;
         z-index: 9999;
       }
 
-      /* Noise grain */
-      body::after {
-        content: '';
-        position: fixed;
-        inset: 0;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-        pointer-events: none;
-        z-index: 9998;
-        opacity: 0.4;
-      }
-
-      /* Header */
       header {
         border-bottom: 1px solid var(--border);
         padding: 32px 40px 24px;
@@ -83,12 +59,9 @@
         font-size: 28px;
         letter-spacing: 0.12em;
         color: var(--accent);
-        text-shadow: 0 0 20px rgba(0, 229, 200, 0.4);
+        text-shadow: 0 0 20px rgba(0,229,200,0.4);
       }
-
-      .logo span {
-        color: var(--accent2);
-      }
+      .logo span { color: var(--accent2); }
 
       .header-meta {
         font-size: 11px;
@@ -99,8 +72,7 @@
 
       .status-dot {
         display: inline-block;
-        width: 7px;
-        height: 7px;
+        width: 7px; height: 7px;
         border-radius: 50%;
         background: var(--green);
         box-shadow: 0 0 8px var(--green);
@@ -109,16 +81,10 @@
       }
 
       @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.3;
-        }
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.3; }
       }
 
-      /* Main grid */
       main {
         max-width: 1100px;
         margin: 0 auto;
@@ -128,7 +94,6 @@
         gap: 20px;
       }
 
-      /* Cards */
       .card {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -136,48 +101,25 @@
         position: relative;
         animation: fadeUp 0.5s ease both;
       }
-
       .card::before {
         content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 3px;
-        height: 100%;
+        top: 0; left: 0;
+        width: 3px; height: 100%;
         background: var(--accent);
       }
+      .card.wide   { grid-column: 1 / -1; }
+      .card.accent2::before { background: var(--accent2); }
+      .card.green::before   { background: var(--green); }
+      .card.amber::before   { background: var(--amber); }
 
-      .card.wide {
-        grid-column: 1 / -1;
-      }
-      .card.accent2::before {
-        background: var(--accent2);
-      }
-      .card.green::before {
-        background: var(--green);
-      }
-      .card.amber::before {
-        background: var(--amber);
-      }
-
-      .card:nth-child(1) {
-        animation-delay: 0.05s;
-      }
-      .card:nth-child(2) {
-        animation-delay: 0.1s;
-      }
-      .card:nth-child(3) {
-        animation-delay: 0.15s;
-      }
-      .card:nth-child(4) {
-        animation-delay: 0.2s;
-      }
-      .card:nth-child(5) {
-        animation-delay: 0.25s;
-      }
-      .card:nth-child(6) {
-        animation-delay: 0.3s;
-      }
+      .card:nth-child(1) { animation-delay: 0.05s; }
+      .card:nth-child(2) { animation-delay: 0.10s; }
+      .card:nth-child(3) { animation-delay: 0.15s; }
+      .card:nth-child(4) { animation-delay: 0.20s; }
+      .card:nth-child(5) { animation-delay: 0.25s; }
+      .card:nth-child(6) { animation-delay: 0.30s; }
+      .card:nth-child(7) { animation-delay: 0.35s; }
 
       .card-label {
         font-family: 'Oxanium', sans-serif;
@@ -197,21 +139,11 @@
         margin-bottom: 18px;
         letter-spacing: 0.05em;
       }
+      .card.accent2 .card-title { color: var(--accent2); }
+      .card.green   .card-title { color: var(--green); }
+      .card.amber   .card-title { color: var(--amber); }
 
-      .card.accent2 .card-title {
-        color: var(--accent2);
-      }
-      .card.green .card-title {
-        color: var(--green);
-      }
-      .card.amber .card-title {
-        color: var(--amber);
-      }
-
-      /* Forms */
-      .field {
-        margin-bottom: 14px;
-      }
+      .field { margin-bottom: 14px; }
       .field label {
         display: block;
         font-size: 11px;
@@ -219,9 +151,7 @@
         margin-bottom: 5px;
         letter-spacing: 0.1em;
       }
-
       .field input,
-      .field select,
       .field textarea {
         width: 100%;
         background: var(--bg);
@@ -233,24 +163,13 @@
         outline: none;
         transition: border-color 0.2s;
       }
-
       .field input:focus,
-      .field select:focus,
       .field textarea:focus {
         border-color: var(--accent);
-        box-shadow: 0 0 0 1px rgba(0, 229, 200, 0.15);
+        box-shadow: 0 0 0 1px rgba(0,229,200,0.15);
       }
-
-      .field textarea {
-        resize: vertical;
-        min-height: 80px;
-      }
-
-      .field input[type='file'] {
-        cursor: pointer;
-        padding: 7px 12px;
-      }
-
+      .field textarea { resize: vertical; min-height: 80px; }
+      .field input[type='file'] { cursor: pointer; padding: 7px 12px; }
       .field input[type='file']::file-selector-button {
         background: var(--border);
         border: none;
@@ -262,7 +181,6 @@
         cursor: pointer;
       }
 
-      /* Buttons */
       .btn {
         display: inline-block;
         font-family: 'Oxanium', sans-serif;
@@ -276,63 +194,38 @@
         transition: all 0.15s;
         text-decoration: none;
       }
-
-      .btn-primary {
-        background: var(--accent);
-        color: var(--bg);
-      }
-      .btn-primary:hover {
-        background: #00ffde;
-        box-shadow: 0 0 16px rgba(0, 229, 200, 0.4);
-      }
-
-      .btn-danger {
-        background: var(--accent2);
-        color: var(--bg);
-      }
-      .btn-danger:hover {
-        background: #ff7a60;
-        box-shadow: 0 0 16px rgba(255, 95, 62, 0.4);
-      }
-
+      .btn-primary { background: var(--accent);  color: var(--bg); }
+      .btn-primary:hover { background: #00ffde; box-shadow: 0 0 16px rgba(0,229,200,0.4); }
+      .btn-danger  { background: var(--accent2); color: var(--bg); }
+      .btn-danger:hover  { background: #ff7a60; box-shadow: 0 0 16px rgba(255,95,62,0.4); }
+      .btn-amber   { background: var(--amber);  color: var(--bg); }
+      .btn-amber:hover   { box-shadow: 0 0 16px rgba(255,179,71,0.4); }
+      .btn-green   { background: var(--green);  color: var(--bg); }
+      .btn-green:hover   { box-shadow: 0 0 16px rgba(57,255,134,0.4); }
       .btn-ghost {
         background: transparent;
         border: 1px solid var(--border);
         color: var(--text);
       }
-      .btn-ghost:hover {
-        border-color: var(--accent);
-        color: var(--accent);
+      .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+      .btn + .btn { margin-left: 8px; }
+
+      .result {
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--text-dim);
+        min-height: 18px;
       }
 
-      .btn-green {
-        background: var(--green);
-        color: var(--bg);
-      }
-      .btn-green:hover {
-        box-shadow: 0 0 16px rgba(57, 255, 134, 0.4);
-      }
-
-      .btn + .btn {
-        margin-left: 8px;
-      }
-
-      /* Route list */
-      .route-list {
-        list-style: none;
-      }
+      .route-list { list-style: none; }
       .route-list li {
         display: flex;
         align-items: center;
         gap: 12px;
         padding: 9px 0;
         border-bottom: 1px solid var(--border);
-        transition: background 0.15s;
       }
-      .route-list li:last-child {
-        border-bottom: none;
-      }
-
+      .route-list li:last-child { border-bottom: none; }
       .method-badge {
         font-family: 'Oxanium', sans-serif;
         font-weight: 600;
@@ -341,50 +234,19 @@
         letter-spacing: 0.1em;
         flex-shrink: 0;
       }
-      .GET {
-        background: rgba(57, 255, 134, 0.15);
-        color: var(--green);
-      }
-      .POST {
-        background: rgba(0, 229, 200, 0.15);
-        color: var(--accent);
-      }
-      .DELETE {
-        background: rgba(255, 95, 62, 0.15);
-        color: var(--accent2);
-      }
-      .PUT {
-        background: rgba(255, 179, 71, 0.15);
-        color: var(--amber);
-      }
+      .GET    { background: rgba(57,255,134,0.15); color: var(--green); }
+      .POST   { background: rgba(0,229,200,0.15);  color: var(--accent); }
+      .DELETE { background: rgba(255,95,62,0.15);  color: var(--accent2); }
+      .route-path { flex: 1; color: var(--text); font-size: 13px; }
+      .route-path a { color: inherit; text-decoration: none; transition: color 0.15s; }
+      .route-path a:hover { color: var(--accent); }
+      .route-desc { font-size: 11px; color: var(--text-dim); }
 
-      .route-path {
-        flex: 1;
-        color: var(--text);
-        font-size: 13px;
-      }
-
-      .route-path a {
-        color: inherit;
-        text-decoration: none;
-        transition: color 0.15s;
-      }
-      .route-path a:hover {
-        color: var(--accent);
-      }
-
-      .route-desc {
-        font-size: 11px;
-        color: var(--text-dim);
-      }
-
-      /* Error links */
       .error-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         gap: 10px;
       }
-
       .error-tile {
         border: 1px solid var(--border);
         padding: 14px 10px;
@@ -392,13 +254,12 @@
         text-decoration: none;
         display: block;
         transition: all 0.15s;
+        cursor: pointer;
+        background: none;
+        width: 100%;
+        font-family: inherit;
       }
-
-      .error-tile:hover {
-        border-color: var(--accent2);
-        background: rgba(255, 95, 62, 0.05);
-      }
-
+      .error-tile:hover { border-color: var(--accent2); background: rgba(255,95,62,0.05); }
       .error-code {
         font-family: 'Oxanium', sans-serif;
         font-weight: 800;
@@ -406,15 +267,8 @@
         color: var(--accent2);
         display: block;
       }
+      .error-name { font-size: 10px; color: var(--text-dim); margin-top: 3px; display: block; }
 
-      .error-name {
-        font-size: 10px;
-        color: var(--text-dim);
-        margin-top: 3px;
-        display: block;
-      }
-
-      /* Response monitor */
       .response-box {
         background: var(--bg);
         border: 1px solid var(--border);
@@ -424,44 +278,31 @@
         min-height: 120px;
         position: relative;
       }
-
       .response-box .cursor {
         display: inline-block;
-        width: 7px;
-        height: 14px;
+        width: 7px; height: 14px;
         background: var(--accent);
         vertical-align: middle;
         margin-left: 2px;
         animation: blink 1s step-end infinite;
       }
-
       @keyframes blink {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0;
-        }
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0; }
       }
+      .response-line { margin: 0; }
+      .response-key  { color: var(--text-dim); }
+      .response-val  { color: var(--accent); }
+      .response-val.ok  { color: var(--green); }
 
-      .response-line {
-        margin: 0;
-      }
-      .response-key {
-        color: var(--text-dim);
-      }
-      .response-val {
+      code {
+        background: rgba(0,229,200,0.08);
         color: var(--accent);
-      }
-      .response-val.ok {
-        color: var(--green);
-      }
-      .response-val.err {
-        color: var(--accent2);
+        padding: 1px 5px;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 12px;
       }
 
-      /* Footer */
       footer {
         border-top: 1px solid var(--border);
         padding: 20px 40px;
@@ -473,72 +314,19 @@
         animation: fadeUp 0.5s 0.4s ease both;
       }
 
-      /* Animations */
       @keyframes fadeDown {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(-10px); }
+        to   { opacity: 1; transform: translateY(0); }
       }
       @keyframes fadeUp {
-        from {
-          opacity: 0;
-          transform: translateY(12px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
       }
 
-      /* Divider */
-      .sep {
-        height: 1px;
-        background: var(--border);
-        margin: 16px 0;
-      }
-
-      /* Inline code */
-      code {
-        background: rgba(0, 229, 200, 0.08);
-        color: var(--accent);
-        padding: 1px 5px;
-        font-family: 'Share Tech Mono', monospace;
-        font-size: 12px;
-      }
-
-      .tag-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 12px;
-      }
-
-      .tag {
-        font-size: 11px;
-        padding: 3px 9px;
-        border: 1px solid var(--border);
-        color: var(--text-dim);
-      }
-
-      /* Responsive */
       @media (max-width: 700px) {
-        main {
-          grid-template-columns: 1fr;
-          padding: 20px;
-        }
-        .card.wide {
-          grid-column: 1;
-        }
-        header {
-          flex-direction: column;
-          align-items: flex-start;
-          padding: 20px;
-        }
+        main { grid-template-columns: 1fr; padding: 20px; }
+        .card.wide { grid-column: 1; }
+        header { flex-direction: column; align-items: flex-start; padding: 20px; }
       }
     </style>
   </head>
@@ -546,74 +334,59 @@
     <header>
       <div>
         <div class="logo">WEBSERV <span>//</span> TEST BENCH</div>
-        <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px">
-          HTTP/1.1 Compliance & Stress Test Interface
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px">
+          HTTP/1.1 Compliance &amp; Feature Test Interface
         </div>
       </div>
       <div class="header-meta">
         <div><span class="status-dot"></span>SERVER ONLINE</div>
         <div id="clock">--:--:--</div>
-        <div id="host">
-          HOST: <span style="color: var(--text)">localhost:8080</span>
-        </div>
+        <div>HOST: <span style="color:var(--text)" id="ri-host">localhost:8080</span></div>
       </div>
     </header>
 
     <main>
-      <!-- GET FORM -->
+
+      <!-- GET -->
       <div class="card">
         <div class="card-label">Method Test</div>
         <div class="card-title">GET REQUEST</div>
-        <form method="GET" action="/get">
+        <form id="getForm">
           <div class="field">
-            <label>QUERY PARAM — key</label>
-            <input type="text" name="key" value="hello" />
+            <label>KEY</label>
+            <input type="text" id="getKey" value="hello" />
           </div>
           <div class="field">
-            <label>QUERY PARAM — value</label>
-            <input type="text" name="value" value="world" />
+            <label>VALUE</label>
+            <input type="text" id="getVal" value="world" />
           </div>
           <button type="submit" class="btn btn-primary">Send GET</button>
-          <a href="/get?key=ping&value=pong" class="btn btn-ghost"
-            >Quick Ping</a
-          >
         </form>
+        <div class="result" id="getResponse"></div>
       </div>
 
-      <!-- POST FORM -->
+      <!-- POST -->
       <div class="card accent2">
         <div class="card-label">Method Test</div>
         <div class="card-title">POST REQUEST</div>
-        <form method="POST" action="/post">
+        <form id="postForm">
           <div class="field">
-            <label>USERNAME</label>
-            <input type="text" name="username" value="mathboye" />
-          </div>
-          <div class="field">
-            <label>MESSAGE BODY</label>
-            <textarea name="body">Hello from webserv test bench!</textarea>
+            <label>BODY</label>
+            <textarea id="postBody">Hello from webserv test bench!</textarea>
           </div>
           <button type="submit" class="btn btn-danger">Send POST</button>
         </form>
+        <div class="result" id="postResponse"></div>
       </div>
 
       <!-- FILE UPLOAD -->
       <div class="card green">
         <div class="card-label">Upload Test</div>
-        <div class="card-title">
-          FILE UPLOAD
-          <span style="font-size: 11px; color: var(--text-dim)"
-            >multipart/form-data</span
-          >
-        </div>
+        <div class="card-title">FILE UPLOAD <span style="font-size:11px;color:var(--text-dim)">multipart/form-data</span></div>
         <form method="POST" action="/files" enctype="multipart/form-data">
           <div class="field">
             <label>SELECT FILE</label>
             <input type="file" name="file" />
-          </div>
-          <div class="field">
-            <label>DESTINATION PATH</label>
-            <input type="text" name="path" value="/files/" />
           </div>
           <button type="submit" class="btn btn-green">Upload</button>
         </form>
@@ -625,26 +398,24 @@
         <div class="card-title">DELETE REQUEST</div>
         <form id="deleteForm">
           <div class="field">
-            <label>TARGET RESOURCE PATH</label>
-            <input
-              type="text"
-              id="deletePath"
-              name="path"
-              value="/files/test.txt"
-            />
+            <label>TARGET RESOURCE</label>
+            <input type="text" id="deletePath" value="/files/text.txt" />
           </div>
-          <button
-            type="submit"
-            class="btn"
-            style="background: var(--amber); color: var(--bg)"
-          >
-            Send DELETE
-          </button>
+          <button type="submit" class="btn btn-amber">Send DELETE</button>
         </form>
-        <div
-          id="deleteResponse"
-          style="margin-top: 12px; font-size: 12px; color: var(--text-dim)"
-        ></div>
+        <div class="result" id="deleteResponse"></div>
+      </div>
+
+      <!-- COOKIE CLICKER -->
+      <div class="card wide green">
+        <div class="card-label">Feature Demo</div>
+        <div class="card-title">COOKIE CLICKER</div>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:18px;line-height:1.7">
+          Click counter served by a Python CGI script.
+          The count is persisted across page loads using an HTTP cookie (<code>click_count</code>).
+          Demonstrates end-to-end <code>Set-Cookie</code> / <code>Cookie</code> header support.
+        </p>
+        <a href="/cookie-clicker" class="btn btn-green">Open Cookie Clicker</a>
       </div>
 
       <!-- ROUTE MAP -->
@@ -658,46 +429,30 @@
             <span class="route-desc">Index — static HTML</span>
           </li>
           <li>
-            <span class="method-badge GET">GET</span>
-            <span class="route-path"><a href="/static/">/static/</a></span>
-            <span class="route-desc">Static file directory listing</span>
-          </li>
-          <li>
-            <span class="method-badge GET">GET</span>
-            <span class="route-path"><a href="/redirect">/redirect</a></span>
-            <span class="route-desc">301 Redirect test</span>
+            <span class="method-badge POST">POST</span>
+            <span class="route-path"><a href="/post">/post</a></span>
+            <span class="route-desc">Write plain-text body to file → 201 Created</span>
           </li>
           <li>
             <span class="method-badge POST">POST</span>
-            <span class="route-path">/post</span>
-            <span class="route-desc">POST body echo endpoint</span>
-          </li>
-          <li>
-            <span class="method-badge POST">POST</span>
-            <span class="route-path">/upload</span>
-            <span class="route-desc">multipart/form-data file upload</span>
+            <span class="route-path"><a href="/files/">/files/</a></span>
+            <span class="route-desc">multipart/form-data file upload → 201 Created</span>
           </li>
           <li>
             <span class="method-badge DELETE">DELETE</span>
-            <span class="route-path">/delete</span>
-            <span class="route-desc">Resource deletion</span>
+            <span class="route-path"><a href="/files/text.txt">/files/text.txt</a></span>
+            <span class="route-desc">Delete an uploaded file → 200 OK</span>
           </li>
           <li>
             <span class="method-badge GET">GET</span>
-            <span class="route-path"
-              ><a href="/cgi-bin/test.py">/cgi-bin/test.py</a></span
-            >
-            <span class="route-desc">CGI script execution</span>
-          </li>
-          <li>
-            <span class="method-badge GET">GET</span>
-            <span class="route-path"><a href="/chunked">/chunked</a></span>
-            <span class="route-desc">Chunked transfer encoding</span>
+            <span class="method-badge POST">POST</span>
+            <span class="route-path"><a href="/cookie-clicker">/cookie-clicker</a></span>
+            <span class="route-desc">Cookie-persisted click counter — Python CGI</span>
           </li>
         </ul>
       </div>
 
-      <!-- ERROR CODES -->
+      <!-- ERROR PAGES -->
       <div class="card accent2 wide">
         <div class="card-label">Error Handling</div>
         <div class="card-title">HTTP ERROR PAGES</div>
@@ -706,35 +461,16 @@
             <span class="error-code">404</span>
             <span class="error-name">Not Found</span>
           </a>
-          <a href="/forbidden" class="error-tile">
+          <a href="/files/" class="error-tile">
             <span class="error-code">403</span>
             <span class="error-name">Forbidden</span>
           </a>
-          <a href="/badrequest" class="error-tile">
-            <span class="error-code">400</span>
-            <span class="error-name">Bad Request</span>
-          </a>
-          <a href="/methodnotallowed" class="error-tile">
+          <button class="error-tile" id="trigger405">
             <span class="error-code">405</span>
             <span class="error-name">Method N/A</span>
-          </a>
-          <a href="/timeout" class="error-tile">
-            <span class="error-code">408</span>
-            <span class="error-name">Timeout</span>
-          </a>
-          <a href="/toolarge" class="error-tile">
-            <span class="error-code">413</span>
-            <span class="error-name">Payload Large</span>
-          </a>
-          <a href="/server-error" class="error-tile">
-            <span class="error-code">500</span>
-            <span class="error-name">Server Error</span>
-          </a>
-          <a href="/notimpl" class="error-tile">
-            <span class="error-code">501</span>
-            <span class="error-name">Not Implemented</span>
-          </a>
+          </button>
         </div>
+        <div class="result" id="errorResponse"></div>
       </div>
 
       <!-- REQUEST INSPECTOR -->
@@ -743,11 +479,11 @@
         <div class="card-title">REQUEST INSPECTOR</div>
         <div class="response-box" id="inspector">
           <p class="response-line">
-            <span class="response-key">method </span>
+            <span class="response-key">method   </span>
             <span class="response-val ok" id="ri-method">GET</span>
           </p>
           <p class="response-line">
-            <span class="response-key">path </span>
+            <span class="response-key">path     </span>
             <span class="response-val" id="ri-path">/</span>
           </p>
           <p class="response-line">
@@ -755,90 +491,117 @@
             <span class="response-val" id="ri-proto">HTTP/1.1</span>
           </p>
           <p class="response-line">
-            <span class="response-key">host </span>
-            <span class="response-val" id="ri-host">localhost:8080</span>
+            <span class="response-key">host     </span>
+            <span class="response-val" id="ri-host2">localhost:8080</span>
           </p>
           <p class="response-line">
-            <span class="response-key">ua </span>
-            <span class="response-val" id="ri-ua" style="font-size: 11px"
-              >—</span
-            >
+            <span class="response-key">ua       </span>
+            <span class="response-val" id="ri-ua" style="font-size:11px">—</span>
           </p>
           <p class="response-line">
-            <span class="response-key">lang </span>
+            <span class="response-key">lang     </span>
             <span class="response-val" id="ri-lang">—</span>
           </p>
           <p class="response-line">
-            <span class="response-key">cookie </span>
+            <span class="response-key">cookie   </span>
             <span class="response-val" id="ri-cookie">—</span>
           </p>
           <span class="cursor"></span>
         </div>
-        <div class="tag-row">
-          <span class="tag">keep-alive</span>
-          <span class="tag">gzip</span>
-          <span class="tag">chunked</span>
-          <span class="tag">multipart</span>
-          <span class="tag">redirects</span>
-          <span class="tag">cgi</span>
-        </div>
       </div>
+
     </main>
 
     <footer>
       <div>WEBSERV TEST BENCH &mdash; <code>42 Lausanne</code></div>
-      <div>STATIC · NO JS REQUIRED FOR FORMS · HTTP/1.1</div>
+      <div>HTTP/1.1 · CGI · COOKIES</div>
     </footer>
-
-    <script>
-      // DELETE form handler
-      document
-        .getElementById('deleteForm')
-        .addEventListener('submit', function (e) {
-          e.preventDefault();
-          const path = document.getElementById('deletePath').value;
-          const responseDiv = document.getElementById('deleteResponse');
-
-          fetch(path, { method: 'DELETE' })
-            .then(res => {
-              const color = res.status === 200 ? 'green' : 'red';
-              responseDiv.innerHTML =
-                `<span style="color:var(--${color})">✓ DELETE ` +
-                res.status +
-                ' ' +
-                res.statusText +
-                '</span>';
-            })
-            .catch(err => {
-              responseDiv.innerHTML =
-                '<span style="color:var(--red)">✗ Error: ' +
-                err.message +
-                '</span>';
-            });
-        });
-    </script>
 
     <script>
       // Clock
       function tick() {
-        const now = new Date();
-        document.getElementById('clock').textContent = now
-          .toTimeString()
-          .slice(0, 8);
+        document.getElementById('clock').textContent =
+          new Date().toTimeString().slice(0, 8);
       }
       tick();
       setInterval(tick, 1000);
 
-      // Fill inspector from window info (client-side only, no server needed)
-      document.getElementById('ri-path').textContent =
-        window.location.pathname || '/';
-      document.getElementById('ri-host').textContent =
-        window.location.host || 'localhost:8080';
-      document.getElementById('ri-ua').textContent =
-        navigator.userAgent.slice(0, 60) + '…';
-      document.getElementById('ri-lang').textContent = navigator.language;
-      document.getElementById('ri-cookie').textContent =
-        document.cookie || '(none)';
+      // Request inspector (client-side info)
+      document.getElementById('ri-path').textContent   = window.location.pathname || '/';
+      document.getElementById('ri-host').textContent   = window.location.host || 'localhost:8080';
+      document.getElementById('ri-host2').textContent  = window.location.host || 'localhost:8080';
+      document.getElementById('ri-ua').textContent     = navigator.userAgent.slice(0, 70) + '…';
+      document.getElementById('ri-lang').textContent   = navigator.language;
+      document.getElementById('ri-cookie').textContent = document.cookie || '(none)';
+
+      // Shared response helper
+      function showResult(el, ok, text) {
+        el.innerHTML = '<span style="color:var(--' + (ok ? 'green' : 'accent2') + ')">' + text + '</span>';
+      }
+
+      // GET form
+      document.getElementById('getForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const key = encodeURIComponent(document.getElementById('getKey').value);
+        const val = encodeURIComponent(document.getElementById('getVal').value);
+        const url = '/?key=' + key + '&value=' + val;
+        const out = document.getElementById('getResponse');
+        out.textContent = '…';
+        fetch(url)
+          .then(function(r) {
+            showResult(out, r.ok, r.status + ' ' + r.statusText + ' — ' + url);
+          })
+          .catch(function(err) {
+            showResult(out, false, '✗ ' + err.message);
+          });
+      });
+
+      // POST form
+      document.getElementById('postForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const body = document.getElementById('postBody').value;
+        const out  = document.getElementById('postResponse');
+        out.textContent = '…';
+        fetch('/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: body
+        })
+          .then(function(r) {
+            showResult(out, r.ok, r.status + ' ' + r.statusText);
+          })
+          .catch(function(err) {
+            showResult(out, false, '✗ ' + err.message);
+          });
+      });
+
+      // DELETE form
+      document.getElementById('deleteForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const path = document.getElementById('deletePath').value;
+        const out  = document.getElementById('deleteResponse');
+        out.textContent = '…';
+        fetch(path, { method: 'DELETE' })
+          .then(function(r) {
+            showResult(out, r.ok, r.status + ' ' + r.statusText + ' — ' + path);
+          })
+          .catch(function(err) {
+            showResult(out, false, '✗ ' + err.message);
+          });
+      });
+
+      // 405 trigger — DELETE to / which only allows GET POST
+      document.getElementById('trigger405').addEventListener('click', function() {
+        const out = document.getElementById('errorResponse');
+        out.textContent = '…';
+        fetch('/', { method: 'DELETE' })
+          .then(function(r) {
+            showResult(out, false, r.status + ' ' + r.statusText + ' (DELETE on GET/POST-only route)');
+          })
+          .catch(function(err) {
+            showResult(out, false, '✗ ' + err.message);
+          });
+      });
     </script>
   </body>
 </html>

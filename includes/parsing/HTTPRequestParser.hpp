@@ -22,8 +22,8 @@
 #include <sstream>
 #include <fstream>
 
-// TODO:
-// Check invalid URI
+// TODO:  Done
+// // Check invalid URI
 
 typedef enum e_http_methods
 {
@@ -42,6 +42,7 @@ class HTTPRequest
 		std::string							_host;
 		std::string							_userAgent;
 		std::map<std::string, float>		_languages;
+		std::map<std::string, std::string>	_cookies;				// <name, value>
 		std::map<std::string, std::string>	_accept;
 		bool								_valid;
 		bool								_headerComplete;
@@ -51,7 +52,7 @@ class HTTPRequest
 		// POST request specific datas
 		std::string							_transfert_encoding;
 		int									_contentLength;
-		std::map<std::string, std::string>	_contentType;  // REFACTORED : <type, charset> : <application/x-www-form-urlencoded, UTF-8>
+		std::map<std::string, std::string>	_contentType;			// REFACTORED : <type, charset> : <application/x-www-form-urlencoded, UTF-8>
 		std::string							_body;
 
 		bool		parseMethodToken(const std::string &methodToken);
@@ -62,6 +63,9 @@ class HTTPRequest
 		bool		parseHeaderLine(const std::string &line);
 		void		parseRaw(const std::string &raw);
 		void		parseContentLength(const std::string &value);
+		bool		parseCookie(const std::string &value);
+
+		std::string	percent_decode(const std::string &in);
 
 	public:
 		HTTPRequest();
@@ -103,6 +107,9 @@ class HTTPRequest
 
 		void		setContentType(const std::map<std::string, std::string> &content);
 		const std::map<std::string, std::string>	&getContentType() const;
+
+		void		setCookie(const std::map<std::string, std::string> &content);
+		const std::map<std::string, std::string>	&getCookie() const;
 
 		void		setContentLength(const int &length);
 		const int	&getContentLength() const;

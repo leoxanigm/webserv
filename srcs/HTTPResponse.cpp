@@ -82,6 +82,9 @@ std::string HTTPResponse::_statusLineFromCode(void) const
 		case CREATED:
 			statusLine << "201 Created";
 			break;
+		case 303:
+			statusLine << "303 See Other";
+			break;
 		case PERMANENT_REDIRECT:
 			statusLine << "308 Permanent Redirect";
 			break;

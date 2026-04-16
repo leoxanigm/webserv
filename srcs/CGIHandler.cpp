@@ -82,6 +82,7 @@ bool CGIHandler::startCGI(const ConfigFileParsing::location_t *location, const H
 	env["REQUEST_URI"] = req.getRequestTarget();
 	env["SCRIPT_FILENAME"] = scriptBasename;
 	env["REDIRECT_STATUS"] = "200";
+	env["HTTP_COOKIE"] = _buildCookieString(req);
 
 	if (!_init(argv, env, location->root))
 		return (false);
@@ -142,6 +143,21 @@ std::string CGIHandler::_contentLenString(const HTTPRequest &req)
 	std::ostringstream contentLen;
 	contentLen << req.getContentLength();
 	return (contentLen.str());
+}
+
+std::string CGIHandler::_buildCookieString(const HTTPRequest &req)
+{
+	const std::map<std::string, std::string>			&cookies = req.getCookie();
+	std::string											result;
+	std::map<std::string, std::string>::const_iterator	it = cookies.begin();
+
+	for (; it != cookies.end(); ++it)
+	{
+		if (!result.empty())
+			result += "; ";
+		result += it->first + "=" + it->second;
+	}
+	return (result);
 }
 
 bool CGIHandler::_init(const std::vector<std::string> &argv,

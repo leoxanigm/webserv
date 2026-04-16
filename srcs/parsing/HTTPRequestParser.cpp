@@ -23,8 +23,8 @@ HTTPRequest::HTTPRequest()
 
 HTTPRequest::HTTPRequest(const std::string &raw) : _method(GET),
 												   _valid(true),
-												    _headerComplete(false),
-													_bodyComplete(false),
+												   _headerComplete(false),
+												   _bodyComplete(false),
 												   _contentLength(0)
 {
 	parseRaw(raw);
@@ -45,6 +45,7 @@ HTTPRequest &HTTPRequest::operator=(const HTTPRequest &other)
 	_host = other._host;
 	_userAgent = other._userAgent;
 	_languages = other._languages;
+	_cookies = other._cookies;
 	_accept = other._accept;
 	_contentType = other._contentType;
 	_transfert_encoding = other._transfert_encoding;
@@ -180,7 +181,17 @@ const std::map<std::string, std::string> &HTTPRequest::getContentType() const
 	return (_contentType);
 }
 
-void HTTPRequest::setAccept(const std::map<std::string, std::string> &accept)
+void	HTTPRequest::setCookie(const std::map<std::string, std::string> &cookie)
+{
+	_cookies = cookie;
+}
+
+const std::map<std::string, std::string>	&HTTPRequest::getCookie() const
+{
+	return (_cookies);
+}
+
+void	HTTPRequest::setAccept(const std::map<std::string, std::string> &accept)
 {
 	_accept = accept;
 }
@@ -188,6 +199,54 @@ void HTTPRequest::setAccept(const std::map<std::string, std::string> &accept)
 const std::map<std::string, std::string> &HTTPRequest::getAccept() const
 {
 	return (_accept);
+}
+
+std::string HTTPRequest::percent_decode(const std::string &in)
+{
+	std::string	out;
+
+	for (std::string::size_type i = 0; i < in.size(); ++i)
+	{
+		char c = in[i];
+
+		if (c == '%')
+		{
+			if (i + 2 >= in.size())
+				return ("");
+
+			char h1 = in[i + 1];
+			char h2 = in[i + 2];
+
+			int v1;
+			if (h1 >= '0' && h1 <= '9')
+				v1 = h1 - '0';
+			else if (h1 >= 'A' && h1 <= 'F')
+				v1 = h1 - 'A' + 10;
+			else if (h1 >= 'a' && h1 <= 'f')
+				v1 = h1 - 'a' + 10;
+			else
+				v1 = -1;
+
+			int v2;
+			if (h2 >= '0' && h2 <= '9')
+				v2 = h2 - '0';
+			else if (h2 >= 'A' && h2 <= 'F')
+				v2 = h2 - 'A' + 10;
+			else if (h2 >= 'a' && h2 <= 'f')
+				v2 = h2 - 'a' + 10;
+			else
+				v2 = -1;
+				
+			if (v1 < 0 || v2 < 0)
+				return ("");
+
+			out.push_back(static_cast<char>((v1 << 4) | v2));  // Bitwise operator to go from hex to char value
+			i += 2;
+		}
+		else
+			out.push_back(c);
+	}
+	return (out);
 }
 
 bool HTTPRequest::parseMethodToken(const std::string &methodToken)
@@ -250,7 +309,13 @@ bool HTTPRequest::parseRequestLine(const std::string &line)
 		return (false);
 	}
 
-	_requestTarget = target;
+	_requestTarget = percent_decode(target);
+	// std::cout << "R Target : " << _requestTarget << std::endl;
+	if (_requestTarget.empty())
+	{
+		_error = 500;  // Internal error, malformed encoded target
+		return (false);
+	}
 	_httpVersion = version;
 	return (true);
 }
@@ -393,8 +458,37 @@ void HTTPRequest::parseContentLength(const std::string &value)
 	_contentLength = static_cast<int>(parsed);
 }
 
-bool HTTPRequest::parseHeaderLine(const std::string &line)
+bool	HTTPRequest::parseCookie(const std::string &value)
+{
+	std::string::size_type	start = 0;
 
+	while (start < value.size())
+	{
+		std::string::size_type end = value.find(';', start);
+		if (end == std::string::npos)
+			end = value.size();
+
+		std::string pair = trim(value.substr(start, end - start));
+		if (pair.empty())
+		{
+			start = end + 1;
+			continue ;
+		}
+		std::string::size_type eq = pair.find('=');
+		if (eq == std::string::npos)
+			return (false);
+
+		std::string name = trim(pair.substr(0, eq));
+		std::string val = trim(pair.substr(eq + 1));
+		if (name.empty())
+			return (false);
+		_cookies[name] = val;
+		start = end + 1;
+	}
+	return (true);
+}
+
+bool	HTTPRequest::parseHeaderLine(const std::string &line)
 {
 	std::string::size_type sep = line.find(':');
 	if (sep == std::string::npos)
@@ -433,6 +527,8 @@ bool HTTPRequest::parseHeaderLine(const std::string &line)
 		return (parseAcceptLanguage(value));
 	if (keyLower == "accept")
 		return (parseAcceptHeader(value));
+	if (keyLower == "cookie")
+		return (parseCookie(value));
 	if (keyLower == "content-type")
 		return (parseContentType(value));
 	if (keyLower == "transfer-encoding")
@@ -566,11 +662,5 @@ void HTTPRequest::parseRaw(const std::string &raw)
 		}
 
 		_bodyComplete = true;
-	}
-
-	if (_method == GET && (!_body.empty() || !_contentType.empty()))
-	{
-		_valid = false;
-		_error = 400; // body in a GET request
 	}
 }

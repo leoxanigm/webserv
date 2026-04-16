@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   print_parsed_request.cpp                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/25 13:36:19 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/02 14:50:26 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/03 14:00:59 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,10 @@ void display_parsed_request(const HTTPRequest &request)
 	for (std::map<std::string, std::string>::const_iterator it = request.getContentType().begin(); it != request.getContentType().end(); ++it)
 		std::cout << "  - " << it->first << ": " << it->second << std::endl;
 		
+	std::cout << "Cookies: " << std::endl;
+	for (std::map<std::string, std::string>::const_iterator it = request.getCookie().begin(); it != request.getCookie().end(); ++it)
+		std::cout << "  - " << it->first << ": " << it->second << std::endl;
+
 	std::cout << "Body: " << request.getBody() << std::endl;
 	std::cout << "Complete: " << (request.isComplete() ? "true" : "false") << std::endl;
 	std::cout << "Valid: " << (request.isValid() ? "true" : "false") << std::endl;

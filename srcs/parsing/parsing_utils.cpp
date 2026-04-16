@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/17 22:13:32 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/02 13:58:09 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/07 16:31:02 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,4 +97,18 @@ std::vector<std::string> extractBraces(const std::string& input)
         }
     }
     return (results);
+}
+
+bool validateLocationPath(const std::string &path)
+{
+    if (path.empty() || path[0] != '/')
+        return (false);
+    for (size_t i = 1; i < path.size(); ++i)
+    {
+        if (path[i] == '/' && path[i - 1] == '/')
+            return (false);
+        if (!std::isalnum((unsigned char)path[i]) && path[i] != '-' && path[i] != '_' && path[i] != '/')
+            return (false);
+    }
+    return (true);
 }

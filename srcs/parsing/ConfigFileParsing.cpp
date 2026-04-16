@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/03 18:27:48 by zalemu           ###   ########.fr       */
+/*   Updated: 2026/04/07 16:59:03 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,14 +74,23 @@ std::vector<std::string> tokenize(const std::string &str)
         }
     }
     if (!token.empty())
-        tokens.push_back(token);
+		tokens.push_back(token);
     return (tokens);
 }
 
-ConfigFileParsing::ConfigFileParsing(std::string raw_conf)
+bool	ConfigFileParsing::isValid(void) const
+{
+	return (_valid);
+}
+
+std::string	ConfigFileParsing::getErrorLine(void) const
+{
+	return (_error_line);
+}
+
+ConfigFileParsing::ConfigFileParsing(std::string raw_conf) : _valid(true)
 {
     std::vector<std::string> tokens = tokenize(raw_conf);
-
     t_servers current_server;
     t_locations current_location;
     bool in_server = false;
@@ -101,57 +110,78 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf)
             in_location = true;
 
             if (tokens[i + 2] == "{")
-            {
-                current_location.location = tokens[i + 1];
+			{
+				if (validateLocationPath(tokens[i + 1]))
+                    current_location.location = tokens[i + 1];
+				else
+                {
+					_valid = false;
+                    _error_line += tokens[i] + " " + tokens[i + 1] + "\n";
+                }
                 i += 2;
             }
-            else if (tokens[i + 3] == "{")
-            {
-                current_location.location = tokens[i + 1] + " " + tokens[i + 2];
+			else if (i + 3 < tokens.size() && tokens[i + 3] == "{")
+			{
+				if (validateLocationPath(tokens[i + 1]))
+                    current_location.location = tokens[i + 1] + " " + tokens[i + 2];
+				else
+                {
+					_valid = false;
+                    _error_line += tokens[i] + " " + tokens[i + 1] + " " + tokens[i + 2] + "\n";
+                }
                 i += 3;
             }
+			else
+			{
+                _valid = false;
+                _error_line += tokens[i];
+                if (i + 1 < tokens.size())
+                    _error_line += " " + tokens[i + 1];
+                _error_line += "\n";
+                in_location = false;
+            }
         }
-        else if (tokens[i] == "}")
-        {
+		else if (tokens[i] == "}")
+		{
             if (in_location)
-            {
+			{
                 current_server.locations.push_back(current_location);
                 in_location = false;
             }
-            else if (in_server)
-            {
+			else if (in_server)
+			{
                 _servers.push_back(current_server);
                 in_server = false;
             }
         }
-        else if (in_location)
-        {
+		else if (in_location)
+		{
             if (tokens[i] == "root" && i + 2 < tokens.size() && tokens[i + 2] == ";")
-            {
+			{
                 current_location.root = tokens[i + 1];
                 i += 2;
             }
-            else if (tokens[i] == "index" && i + 2 < tokens.size() && tokens[i + 2] == ";")
-            {
+			else if (tokens[i] == "index" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+			{
                 current_location.index = tokens[i + 1];
                 i += 2;
             }
-            else if (tokens[i] == "cgi_php" && i + 2 < tokens.size() && tokens[i + 2] == ";")
-            {
+			else if (tokens[i] == "cgi_php" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+			{
                 current_location.is_cgi = true;
                 current_location.cgi_type = PHP;
                 current_location.cgi_location = tokens[i + 1];
                 i += 2;
             }
-            else if (tokens[i] == "cgi_python" && i + 2 < tokens.size() && tokens[i + 2] == ";")
-            {
+			else if (tokens[i] == "cgi_python" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+			{
                 current_location.is_cgi = true;
                 current_location.cgi_type = PYTHON;
                 current_location.cgi_location = tokens[i + 1];
                 i += 2;
             }
-            else if (tokens[i] == "autoindex" && i + 2 < tokens.size() && tokens[i + 2] == ";")
-            {
+			else if (tokens[i] == "autoindex" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+			{
                 current_location.autoindex = (tokens[i + 1] == "on");
                 i += 2;
             }
@@ -173,70 +203,93 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf)
                 current_location.return_location = tokens[i + 2];
                 i += 3;
             }
-            else
-            {
+			else
+			{
                 while (i < tokens.size() && tokens[i] != ";" && tokens[i] != "}")
-                    ++i;
+					++i;
                 if (tokens[i] == "}")
-                    --i;
+					--i;
             }
         }
-        else if (in_server)
-        {
+		else if (in_server)
+		{
             if (tokens[i] == "listen" && i + 2 < tokens.size())
-            {
+			{
                 std::string listen_val = tokens[i + 1];
 
                 if (listen_val.find(":") != std::string::npos)
-                {
+				{
                     current_server.listen_interface = listen_val.substr(0, listen_val.find_last_of(":"));
                     current_server.listen_port = listen_val.substr(listen_val.find_last_of(":") + 1);
                 }
-                else
+				else
                     current_server.listen_port = listen_val;
 
                 while (i < tokens.size() && tokens[i] != ";")
-                {
+				{
                     if (tokens[i] == "default_server")
-                        current_server.is_default_server = true;
+						current_server.is_default_server = true;
                     i++;
                 }
             }
-            else if (tokens[i] == "server_name" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+            else if (tokens[i] == "client_timeout" && i + 2 < tokens.size() && tokens[i + 2] == ";")
             {
+                if (utils::ft_str_is_digits(tokens[i + 1]))
+                    current_server.client_timeout = std::atoi(tokens[i + 1].c_str());
+                if (current_server.client_timeout < 0)
+                {
+                    _valid = false;
+                    _error_line += tokens[i] + " " + tokens[i + 1] + "\n";
+                }
+            }
+            else if (tokens[i] == "max_body_size" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+            {
+                if (utils::ft_str_is_digits(tokens[i + 1]))
+                    current_server.max_body_size = std::atoi(tokens[i + 1].c_str());
+                if (current_server.max_body_size < 0)
+                {
+                    _valid = false;
+                    _error_line += tokens[i] + " " + tokens[i + 1] + "\n";
+                }
+            }
+			else if (tokens[i] == "server_name" && i + 2 < tokens.size() && tokens[i + 2] == ";")
+			{
                 current_server.server_name = tokens[i + 1];
                 i += 2;
             }
-            else if (tokens[i] == "error_page" && i + 3 < tokens.size() && tokens[i + 3] == ";")
-            {
+			else if (tokens[i] == "error_page" && i + 3 < tokens.size() && tokens[i + 3] == ";")
+			{
                 int code = std::atoi(tokens[i + 1].c_str());
                 std::string page = tokens[i + 2];
 
-                // TODO: more custom pages for the rest of status codes
                 if (code == 404)
-                    current_server.error_pages.NotFound = page;
+					current_server.error_pages.NotFound = page;
                 else if (code == 403)
-                    current_server.error_pages.Forbidden = page;
+					current_server.error_pages.Forbidden = page;
                 else if (code == 500)
-                    current_server.error_pages.InternalServerError = page;
+					current_server.error_pages.InternalServerError = page;
                 i += 3;
             }
-            else
-            {
+			else
+			{
                 while (i < tokens.size() && tokens[i] != ";" && tokens[i] != "}")
-                    ++i;
+					++i;
                 if (tokens[i] == "}")
-                    --i;
+					--i;
             }
         }
     }
+    if (in_server || in_location)
+    {
+        _valid = false;
+        _error_line += "Missing closing bracket '}'\n";
+    }
 }
 
-const std::list<t_servers> &ConfigFileParsing::getServers(void) const
+const std::list<t_servers>	&ConfigFileParsing::getServers(void) const
 {
-    return (_servers);
+	return (_servers);
 }
 
 ConfigFileParsing::~ConfigFileParsing()
-{
-}
+{}
