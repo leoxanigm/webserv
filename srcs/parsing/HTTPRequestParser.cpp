@@ -45,6 +45,7 @@ HTTPRequest &HTTPRequest::operator=(const HTTPRequest &other)
 	_host = other._host;
 	_userAgent = other._userAgent;
 	_languages = other._languages;
+	_cookies = other._cookies;
 	_accept = other._accept;
 	_contentType = other._contentType;
 	_transfert_encoding = other._transfert_encoding;

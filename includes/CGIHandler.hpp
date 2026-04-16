@@ -65,6 +65,7 @@ private:
 	static std::string _methodToString(const HTTPRequest &req);
 	static std::string _extractQueryString(const std::string &uri);
 	static std::string _contentLenString(const HTTPRequest &req);
+	static std::string _buildCookieString(const HTTPRequest &req);
 };
 
 #endif // CGIHANDLER_HPP
