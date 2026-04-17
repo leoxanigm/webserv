@@ -50,6 +50,29 @@ void Connection::start()
 	std::list<t_servers>			srvs = _config.getServers();
 	std::list<t_servers>::iterator	it;
 
+	std::ifstream	hostname_file("/etc/hostname");
+	std::string		hostname;
+
+    if (!std::getline(hostname_file, hostname))
+	{
+		std::ifstream	hosts_file("/etc/hosts");
+		std::string		host;
+
+		while (std::getline(hosts_file, host))
+		{
+			if (host.find("127.0.0.1") != std::string::npos)
+			{
+				int i = host.length() - 1;
+
+				while (i != 0 && !isspace(host[i]))
+					--i;
+				hostname = host.substr(i + 1);
+				break ;
+			}
+		}
+		hostname = "127.0.0.1";
+	}
+
 	for (it = srvs.begin(); it != srvs.end(); ++it)
 	{
 		std::cout << YELLOW << "Server " << UNDERLINE_YELLOW << it->server_name << YELLOW << " avalaible at:" << std::endl;
@@ -58,7 +81,7 @@ void Connection::start()
 		std::list<t_locations>::iterator it2;
 		for (it2 = locs.begin(); it2 != locs.end(); ++it2)
 		{
-			std::cout << UNDERLINE_YELLOW << "\thttp://" << it->server_name << ":" << it->listen_port << it2->location << std::endl;
+			std::cout << UNDERLINE_YELLOW << "\thttp://" << hostname << ":" << it->listen_port << it2->location << std::endl;
 		}
 		std::cout << RESET << std::endl;
 	}

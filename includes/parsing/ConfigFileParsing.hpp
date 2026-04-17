@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/07 15:46:21 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/17 18:15:57 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,7 +134,7 @@ typedef struct	s_servers
 		listen_interface("[::]"), // test custom host (eg, zalemu.42.fr)
 		server_name("webserv"),
 		client_timeout(60),
-		max_body_size(1) {}
+		max_body_size(1048576) {}
 }	t_servers;
 
 class ConfigFileParsing
@@ -143,7 +143,8 @@ class ConfigFileParsing
 		ConfigFileParsing();
 		ConfigFileParsing(const ConfigFileParsing &obj);
 		ConfigFileParsing &operator=(const ConfigFileParsing &obj);
-		
+		bool	isPortAvailable(std::string port);
+
 		std::list<t_servers>	_servers;
 
 		std::string				_error_line;
