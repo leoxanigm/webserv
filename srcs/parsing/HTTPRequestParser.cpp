@@ -25,7 +25,8 @@ HTTPRequest::HTTPRequest(const std::string &raw) : _method(GET),
 												   _valid(true),
 												   _headerComplete(false),
 												   _bodyComplete(false),
-												   _contentLength(0)
+												   _contentLength(0),
+												   _hasContentLength(false)
 {
 	parseRaw(raw);
 }
@@ -50,6 +51,7 @@ HTTPRequest &HTTPRequest::operator=(const HTTPRequest &other)
 	_contentType = other._contentType;
 	_transfert_encoding = other._transfert_encoding;
 	_contentLength = other._contentLength;
+	_hasContentLength = other._hasContentLength;
 	_headerComplete = other._headerComplete;
 	_bodyComplete = other._bodyComplete;
 	_body = other._body;
@@ -121,7 +123,7 @@ void HTTPRequest::setHost(const std::string &host)
 	_host = host;
 }
 
-const int &HTTPRequest::getContentLength() const
+std::size_t HTTPRequest::getContentLength() const
 {
 	return (_contentLength);
 }
@@ -181,17 +183,17 @@ const std::map<std::string, std::string> &HTTPRequest::getContentType() const
 	return (_contentType);
 }
 
-void	HTTPRequest::setCookie(const std::map<std::string, std::string> &cookie)
+void HTTPRequest::setCookie(const std::map<std::string, std::string> &cookie)
 {
 	_cookies = cookie;
 }
 
-const std::map<std::string, std::string>	&HTTPRequest::getCookie() const
+const std::map<std::string, std::string> &HTTPRequest::getCookie() const
 {
 	return (_cookies);
 }
 
-void	HTTPRequest::setAccept(const std::map<std::string, std::string> &accept)
+void HTTPRequest::setAccept(const std::map<std::string, std::string> &accept)
 {
 	_accept = accept;
 }
@@ -203,7 +205,7 @@ const std::map<std::string, std::string> &HTTPRequest::getAccept() const
 
 std::string HTTPRequest::percent_decode(const std::string &in)
 {
-	std::string	out;
+	std::string out;
 
 	for (std::string::size_type i = 0; i < in.size(); ++i)
 	{
@@ -236,11 +238,11 @@ std::string HTTPRequest::percent_decode(const std::string &in)
 				v2 = h2 - 'a' + 10;
 			else
 				v2 = -1;
-				
+
 			if (v1 < 0 || v2 < 0)
 				return ("");
 
-			out.push_back(static_cast<char>((v1 << 4) | v2));  // Bitwise operator to go from hex to char value
+			out.push_back(static_cast<char>((v1 << 4) | v2)); // Bitwise operator to go from hex to char value
 			i += 2;
 		}
 		else
@@ -300,7 +302,7 @@ bool HTTPRequest::parseRequestLine(const std::string &line)
 	}
 	if (target[0] != '/')
 	{
-		_error = 404; // invalid request target
+		_error = 400; // invalid request target
 		return (false);
 	}
 	if (version.compare("HTTP/1.0") != 0 && version.compare("HTTP/1.1") != 0)
@@ -313,7 +315,7 @@ bool HTTPRequest::parseRequestLine(const std::string &line)
 	// std::cout << "R Target : " << _requestTarget << std::endl;
 	if (_requestTarget.empty())
 	{
-		_error = 500;  // Internal error, malformed encoded target
+		_error = 500; // Internal error, malformed encoded target
 		return (false);
 	}
 	_httpVersion = version;
@@ -445,22 +447,25 @@ void HTTPRequest::parseContentLength(const std::string &value)
 {
 	if (!utils::ft_str_is_digits(value))
 	{
-		_contentLength = -1;
+		_contentLength = 0;
+		_hasContentLength = false;
 		return;
 	}
 	char *end = NULL;
 	long parsed = std::strtol(value.c_str(), &end, 10);
 	if (end == value.c_str() || *end != '\0' || parsed < 0 || parsed > INT_MAX)
 	{
-		_contentLength = -1;
+		_contentLength = 0;
+		_hasContentLength = false;
 		return;
 	}
-	_contentLength = static_cast<int>(parsed);
+	_contentLength = static_cast<std::size_t>(parsed);
+	_hasContentLength = true;
 }
 
-bool	HTTPRequest::parseCookie(const std::string &value)
+bool HTTPRequest::parseCookie(const std::string &value)
 {
-	std::string::size_type	start = 0;
+	std::string::size_type start = 0;
 
 	while (start < value.size())
 	{
@@ -472,7 +477,7 @@ bool	HTTPRequest::parseCookie(const std::string &value)
 		if (pair.empty())
 		{
 			start = end + 1;
-			continue ;
+			continue;
 		}
 		std::string::size_type eq = pair.find('=');
 		if (eq == std::string::npos)
@@ -488,7 +493,7 @@ bool	HTTPRequest::parseCookie(const std::string &value)
 	return (true);
 }
 
-bool	HTTPRequest::parseHeaderLine(const std::string &line)
+bool HTTPRequest::parseHeaderLine(const std::string &line)
 {
 	std::string::size_type sep = line.find(':');
 	if (sep == std::string::npos)
@@ -539,15 +544,13 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 	}
 	if (keyLower == "content-length")
 	{
-		if (_contentLength != 0)
+		if (_hasContentLength)
 		{
 			_error = 400; // duplicate host header
 			return (false);
 		}
 		parseContentLength(value);
-		if (_contentLength == -1)
-			return (false);
-		return (true);
+		return (_hasContentLength);
 	}
 	return (true);
 }
@@ -561,6 +564,8 @@ bool	HTTPRequest::parseHeaderLine(const std::string &line)
 void HTTPRequest::parseRaw(const std::string &raw)
 {
 	std::string::size_type body_begin = raw.find("\r\n\r\n");
+	std::istringstream tmpBody(raw.substr(body_begin + 4));
+
 	if (body_begin == std::string::npos)
 	{
 		_valid = false;
@@ -569,6 +574,8 @@ void HTTPRequest::parseRaw(const std::string &raw)
 	}
 
 	_headerComplete = true;
+	if (tmpBody.str().find("\r\n\r\n") != std::string::npos || tmpBody.str().size() >= _contentLength)
+		_bodyComplete = true;
 
 	std::istringstream rawStream(raw.substr(0, body_begin + 2));
 	std::string line;
@@ -613,7 +620,6 @@ void HTTPRequest::parseRaw(const std::string &raw)
 		return;
 	}
 
-	std::istringstream tmpBody(raw.substr(body_begin + 4));
 	std::string bodyLine;
 	int lineNum = 0;
 	int length = -1;
@@ -654,13 +660,12 @@ void HTTPRequest::parseRaw(const std::string &raw)
 	else
 	{
 		_body = tmpBody.str();
-		if (_body.length() != static_cast<unsigned int>(_contentLength))
+
+		if (_body.length() != _contentLength)
 		{
 			_valid = false;
 			_error = 400; // content length is not the same length as the actual body
 			return;
 		}
-
-		_bodyComplete = true;
 	}
 }

@@ -45,7 +45,7 @@ std::string HTTPResponse::toString() const
 	header << _statusLineFromCode() << "\r\n";
 	header << "Date: " << _dateGMT() << "\r\n";
 	
-	if (_body.size() > 0)
+	if (_statusCode != 204)
 		header << "Content-Length: " << _body.size() << "\r\n";
 
 	header << "Connection: close\r\n";

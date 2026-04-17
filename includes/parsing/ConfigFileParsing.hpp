@@ -41,10 +41,21 @@ typedef struct s_HTTPStatusCodePages
 	std::string	NotFound;
 	std::string	MethodNotAllowed;
 
+	std::string	NotAcceptable;
+	std::string	RequestTimeout;
+	std::string	LengthRequired;
+	std::string	PayloadTooLarge;
+	std::string	UnsupportedMediaType;
+	std::string	RangeNotSatisfiable;
+	std::string	ExpectationFailed;
+
 	std::string	InternalServerError;
 	std::string	NotImplemented;
 	std::string	BadGateway;
 	std::string	ServiceUnavailable;
+
+	std::string	GatewayTimeout;
+	std::string	HttpVersionNotSupported;
 
 	s_HTTPStatusCodePages() : 
 		OK("./confs/status_pages/200.html"),
@@ -56,10 +67,19 @@ typedef struct s_HTTPStatusCodePages
 		Forbidden("./confs/status_pages/403.html"),
 		NotFound("./confs/status_pages/404.html"),
 		MethodNotAllowed("./confs/status_pages/405.html"),
+		NotAcceptable("./confs/status_pages/406.html"),
+		RequestTimeout("./confs/status_pages/408.html"),
+		LengthRequired("./confs/status_pages/411.html"),
+		PayloadTooLarge("./confs/status_pages/413.html"),
+		UnsupportedMediaType("./confs/status_pages/415.html"),
+		RangeNotSatisfiable("./confs/status_pages/416.html"),
+		ExpectationFailed("./confs/status_pages/417.html"),
 		InternalServerError("./confs/status_pages/500.html"),
 		NotImplemented("./confs/status_pages/501.html"),
 		BadGateway("./confs/status_pages/502.html"),
-		ServiceUnavailable("./confs/status_pages/503.html") {}
+		ServiceUnavailable("./confs/status_pages/503.html"),
+		GatewayTimeout("./confs/status_pages/504.html"),
+		HttpVersionNotSupported("./confs/status_pages/505.html") {}
 }	t_HTTPStatusCodesPages;
 
 typedef enum	e_CGIs
@@ -106,7 +126,7 @@ typedef struct	s_servers
 	std::string				listen_interface;
 	std::string				server_name;
 	int						client_timeout;	// in seconds
-	int						max_body_size;	// in mega bytes
+	std::size_t				max_body_size;	// in mega bytes
 
 	s_servers() : 
 		is_default_server(false),
