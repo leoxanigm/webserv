@@ -51,7 +51,7 @@ ResponseBuilder::ResponseBuilder(
 					_response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
 				}
 			}
-			else if (location->return_code == 301 || location->return_code == 308) // handle redirect first
+			else if (location->return_code == 308) // handle redirect first
 			{
 				_response.setStatusCode(HTTPResponse::PERMANENT_REDIRECT);
 				_response.setHeader("Location", location->return_location);
@@ -117,97 +117,88 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 	std::string requestTarget = _stripQueryString(_request.getRequestTarget());
 	std::string path = _resolvePath(requestTarget, location);
 
-	std::cout << requestTarget << " " << path << '\n';
+	struct stat st;
 
-	if (location->is_cgi)
+	// Can't find file or directory
+	if (stat(path.c_str(), &st) != 0)
 	{
-		// TODO: CGI handling
+		_response.setStatusCode(HTTPError::NOT_FOUND);
+		_response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
+		return;
 	}
-	else
+
+	// Directory
+	if (S_ISDIR(st.st_mode))
 	{
-		struct stat st;
-
-		// Can't find file or directory
-		if (stat(path.c_str(), &st) != 0)
+		if (!requestTarget.empty() && requestTarget[requestTarget.size() - 1] != '/')
 		{
-			_response.setStatusCode(HTTPError::NOT_FOUND);
-			_response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
+			_response.setStatusCode(HTTPResponse::PERMANENT_REDIRECT);
+			_response.setHeader("Location", requestTarget + "/");
 			return;
 		}
 
-		// Directory
-		if (S_ISDIR(st.st_mode))
+		// Try to serve index file if configured
+		if (!location->index.empty())
 		{
-			if (!requestTarget.empty() && requestTarget[requestTarget.size() - 1] != '/')
-			{
-				_response.setStatusCode(HTTPResponse::PERMANENT_REDIRECT);
-				_response.setHeader("Location", requestTarget + "/");
-				return;
-			}
+			std::string indexPath = path;
+			if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
+				indexPath += "/";
+			indexPath += location->index;
 
-			// Try to serve index file if configured
-			if (!location->index.empty())
+			struct stat indexSt;
+			if (stat(indexPath.c_str(), &indexSt) == 0 && S_ISREG(indexSt.st_mode))
 			{
-				std::string indexPath = path;
-				if (!indexPath.empty() && indexPath[indexPath.size() - 1] != '/')
-					indexPath += "/";
-				indexPath += location->index;
-
-				struct stat indexSt;
-				if (stat(indexPath.c_str(), &indexSt) == 0 && S_ISREG(indexSt.st_mode))
+				std::vector<char> fileContent = utils::readFile(indexPath);
+				if (!fileContent.empty() || indexSt.st_size == 0)
 				{
-					std::vector<char> fileContent = utils::readFile(indexPath);
-					if (!fileContent.empty() || indexSt.st_size == 0)
-					{
-						_response.setStatusCode(HTTPResponse::OK);
-						_response.setHeader("Content-Type", _getMimeType(indexPath));
-						_response.setBody(fileContent);
-						return;
-					}
+					_response.setStatusCode(HTTPResponse::OK);
+					_response.setHeader("Content-Type", _getMimeType(indexPath));
+					_response.setBody(fileContent);
+					return;
 				}
 			}
-
-			// No index file or can't read it, check autoindex
-			if (location->autoindex)
-				_directoryListing(requestTarget, path);
-			else
-			{
-				_response.setStatusCode(HTTPError::FORBIDDEN);
-				try
-				{
-					_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
-				}
-				catch (const std::exception &e)
-				{
-					std::cerr << "Error setting body in ResponseBuilder::_processGET: "
-							  << e.what() << '\n';
-				}
-			}
-			return;
 		}
 
-		// File
-		if (S_ISREG(st.st_mode))
+		// No index file or can't read it, check autoindex
+		if (location->autoindex)
+			_directoryListing(requestTarget, path);
+		else
 		{
-			std::vector<char> fileContent = utils::readFile(path);
-			if (fileContent.empty() && st.st_size > 0)
+			_response.setStatusCode(HTTPError::FORBIDDEN);
+			try
 			{
-				// File could not be read (permissions or other error)
-				_response.setStatusCode(HTTPError::FORBIDDEN);
 				_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
-				return;
 			}
+			catch (const std::exception &e)
+			{
+				std::cerr << "Error setting body in ResponseBuilder::_processGET: "
+						  << e.what() << '\n';
+			}
+		}
+		return;
+	}
 
-			_response.setStatusCode(HTTPResponse::OK);
-			_response.setHeader("Content-Type", _getMimeType(path));
-			_response.setBody(fileContent);
+	// File
+	if (S_ISREG(st.st_mode))
+	{
+		std::vector<char> fileContent = utils::readFile(path);
+		if (fileContent.empty() && st.st_size > 0)
+		{
+			// File could not be read (permissions or other error)
+			_response.setStatusCode(HTTPError::FORBIDDEN);
+			_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
 			return;
 		}
 
-		// Not a regular file or directory (socket, device, etc.)
-		_response.setStatusCode(HTTPError::FORBIDDEN);
-		_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
+		_response.setStatusCode(HTTPResponse::OK);
+		_response.setHeader("Content-Type", _getMimeType(path));
+		_response.setBody(fileContent);
+		return;
 	}
+
+	// Not a regular file or directory (socket, device, etc.)
+	_response.setStatusCode(HTTPError::FORBIDDEN);
+	_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
 }
 
 void ResponseBuilder::_processPOST(const ConfigFileParsing::location_t *location)
@@ -326,7 +317,6 @@ void ResponseBuilder::_processDELETE(const ConfigFileParsing::location_t *locati
 		return;
 	}
 
-	// Return 204 No Content on success
 	_response.setStatusCode(HTTPResponse::OK);
 }
 
@@ -431,6 +421,20 @@ const std::string &ResponseBuilder::_getErrorPage(int code) const
 		return (_server.error_pages.NotFound);
 	case 405:
 		return (_server.error_pages.MethodNotAllowed);
+	case 406:
+		return (_server.error_pages.NotAcceptable);
+	case 408:
+		return (_server.error_pages.RequestTimeout);
+	case 411:
+		return (_server.error_pages.LengthRequired);
+	case 413:
+		return (_server.error_pages.PayloadTooLarge);
+	case 415:
+		return (_server.error_pages.UnsupportedMediaType);
+	case 416:
+		return (_server.error_pages.RangeNotSatisfiable);
+	case 417:
+		return (_server.error_pages.ExpectationFailed);
 	case 500:
 		return (_server.error_pages.InternalServerError);
 	case 501:
@@ -439,6 +443,10 @@ const std::string &ResponseBuilder::_getErrorPage(int code) const
 		return (_server.error_pages.BadGateway);
 	case 503:
 		return (_server.error_pages.ServiceUnavailable);
+	case 504:
+		return (_server.error_pages.GatewayTimeout);
+	case 505:
+		return (_server.error_pages.HttpVersionNotSupported);
 	}
 
 	return (_server.error_pages.InternalServerError);
@@ -491,7 +499,6 @@ bool ResponseBuilder::_isValidCGIScript() const
 {
 	std::string requestPath = ResponseBuilder::_stripQueryString(_request.getRequestTarget());
 	std::string scriptPath = ResponseBuilder::_resolvePath(requestPath, _location);
-	// std::string path = scriptPath.substr(scriptPath.find_last_of('/') + 1);
 	std::string path = scriptPath;
 
 	if ((_location->cgi_type == PHP && (path.find(".php") == std::string::npos)) ||

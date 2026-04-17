@@ -115,6 +115,19 @@ int Client::handleRead(int fd)
 		}
 
 		_inBuffer.append(buff, static_cast<std::size_t>(n));
+
+		if (_inBuffer.size() > static_cast<std::size_t>(_server.max_body_size))
+		{
+			_inBuffer.clear();
+
+			ResponseBuilder errResp(_req, _server);
+			errResp.buildErrorRes(HTTPError::PAYLOAD_TOO_LARGE);
+
+			_outBuffer = errResp.str();
+			_state = SEND_RESPONSE;
+			return (1);
+		}
+
 		_req = HTTPRequest(_inBuffer);
 
 		if (_req.isComplete())
@@ -122,6 +135,16 @@ int Client::handleRead(int fd)
 			_inBuffer.clear();
 
 			ResponseBuilder response(_req, _server);
+
+			if (!_req.isValid())
+			{
+				ResponseBuilder errResp(_req, _server);
+				errResp.buildErrorRes(_req.getError());
+
+				_outBuffer = errResp.str();
+				_state = SEND_RESPONSE;
+				return (1);
+			}
 
 			if (response.isCGI())
 			{
@@ -167,6 +190,20 @@ int Client::handleRead(int fd)
 		{
 			_cgiRawOutput.append(buff, static_cast<std::size_t>(n));
 			return (static_cast<int>(n));
+		}
+
+		if (_cgiRawOutput.size() > static_cast<std::size_t>(_server.max_body_size))
+		{
+			_cgiRawOutput.clear();
+
+			ResponseBuilder errResp(_req, _server);
+			errResp.buildErrorRes(HTTPError::INTERNAL_SERVER_ERROR);
+
+			_outBuffer = errResp.str();
+			_state = SEND_RESPONSE;
+			_cgi.reapChildNonBlocking();
+			_isCGI = false;
+			return (1);
 		}
 
 		// CGI done writing

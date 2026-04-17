@@ -51,7 +51,8 @@ class HTTPRequest
 
 		// POST request specific datas
 		std::string							_transfert_encoding;
-		int									_contentLength;
+		std::size_t							_contentLength;
+		bool								_hasContentLength;
 		std::map<std::string, std::string>	_contentType;			// REFACTORED : <type, charset> : <application/x-www-form-urlencoded, UTF-8>
 		std::string							_body;
 
@@ -112,7 +113,7 @@ class HTTPRequest
 		const std::map<std::string, std::string>	&getCookie() const;
 
 		void		setContentLength(const int &length);
-		const int	&getContentLength() const;
+		std::size_t	getContentLength() const;
 };
 
 #endif
