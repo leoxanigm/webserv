@@ -63,7 +63,6 @@ private:
 		std::vector<std::string> &tempEnv,
 		std::vector<char *> &execEnv);
 	static std::string _methodToString(const HTTPRequest &req);
-	static std::string _extractQueryString(const std::string &uri);
 	static std::string _contentLenString(const HTTPRequest &req);
 	static std::string _buildCookieString(const HTTPRequest &req);
 };

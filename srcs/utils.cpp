@@ -52,7 +52,8 @@ std::vector<char> utils::readFile(const std::string &path)
 	file.seekg(0, file.beg);
 
 	readData.resize(size);
-	file.read(readData.data(), size);
+	if (!readData.empty())
+		file.read(&readData[0], size);
 	file.close();
 
 	return (readData);
@@ -60,17 +61,17 @@ std::vector<char> utils::readFile(const std::string &path)
 
 bool utils::ft_endswith(const std::string &fullString, const std::string &ending)
 {
-    if (fullString.length() >= ending.length())
+	if (fullString.length() >= ending.length())
 		return (fullString.compare(fullString.length() - ending.length(), ending.length(), ending) == 0);
-    else
-        return (false);
+	else
+		return (false);
 }
 
 bool utils::_writeFile(const std::string &path, const std::string &body)
 {
-    std::ofstream ofs(path.c_str(), std::ios::binary);
-    if (!ofs.is_open())
-        return (false);
-    ofs.write(body.c_str(), body.size());
-    return (!ofs.fail());
+	std::ofstream ofs(path.c_str(), std::ios::binary);
+	if (!ofs.is_open())
+		return (false);
+	ofs.write(body.c_str(), body.size());
+	return (!ofs.fail());
 }

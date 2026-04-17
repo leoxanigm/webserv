@@ -22,6 +22,9 @@ HTTPRequest::HTTPRequest()
 }
 
 HTTPRequest::HTTPRequest(const std::string &raw) : _method(GET),
+												   _requestTarget(""),
+												   _path(""),
+												   _queryString(""),
 												   _valid(true),
 												   _headerComplete(false),
 												   _bodyComplete(false),
@@ -42,6 +45,8 @@ HTTPRequest &HTTPRequest::operator=(const HTTPRequest &other)
 		return (*this);
 	_method = other._method;
 	_requestTarget = other._requestTarget;
+	_path = other._path;
+	_queryString = other._queryString;
 	_httpVersion = other._httpVersion;
 	_host = other._host;
 	_userAgent = other._userAgent;
@@ -101,6 +106,16 @@ const unsigned int &HTTPRequest::getError() const
 const std::string &HTTPRequest::getRequestTarget() const
 {
 	return (_requestTarget);
+}
+
+const std::string &HTTPRequest::getPath() const
+{
+	return (_path);
+}
+
+const std::string &HTTPRequest::getQueryString() const
+{
+	return (_queryString);
 }
 
 void HTTPRequest::setHTTPVersion(const std::string &version)
@@ -271,6 +286,32 @@ bool HTTPRequest::parseMethodToken(const std::string &methodToken)
 	return (false);
 }
 
+bool HTTPRequest::parseRequestTarget(const std::string &target)
+{
+	std::string::size_type qpos = target.find('?');
+
+	_requestTarget = target;
+
+	if (qpos == std::string::npos)
+	{
+		_path = target;
+		_queryString.clear();
+	}
+	else
+	{
+		_path = target.substr(0, qpos);
+		_queryString = target.substr(qpos + 1);
+	}
+
+	if (_path.empty() || _path[0] != '/')
+	{
+		_error = 400;
+		return (false);
+	}
+
+	return (true);
+}
+
 bool HTTPRequest::parseRequestLine(const std::string &line)
 {
 	std::string::size_type s1 = line.find(' ');
@@ -311,11 +352,9 @@ bool HTTPRequest::parseRequestLine(const std::string &line)
 		return (false);
 	}
 
-	_requestTarget = percent_decode(target);
-	// std::cout << "R Target : " << _requestTarget << std::endl;
-	if (_requestTarget.empty())
+	if (!parseRequestTarget(percent_decode(target)))
 	{
-		_error = 500; // Internal error, malformed encoded target
+		_error = 400;
 		return (false);
 	}
 	_httpVersion = version;
@@ -346,10 +385,10 @@ bool HTTPRequest::parseAcceptLanguage(const std::string &value)
 				{
 					qStr = trim(item.substr(qPos + 2));
 					char *end;
-					float q = std::strtof(qStr.c_str(), &end);
+					double q = std::strtod(qStr.c_str(), &end);
 					if (end == qStr.c_str() || *end != '\0')
 						return (false);
-					qValue = q;
+					qValue = static_cast<float>(q);
 				}
 				else
 					return (false);

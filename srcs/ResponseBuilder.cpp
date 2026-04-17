@@ -31,7 +31,7 @@ ResponseBuilder::ResponseBuilder(
 	else
 	{
 		const ConfigFileParsing::location_t *location = 0;
-		location = _longestPrefixLocationMatch(_request.getRequestTarget());
+		location = _longestPrefixLocationMatch(_request.getPath());
 		if (location == 0)
 		{
 			_response.setStatusCode(HTTPError::NOT_FOUND);
@@ -114,7 +114,7 @@ void ResponseBuilder::_processGET(const ConfigFileParsing::location_t *location)
 		return;
 	}
 
-	std::string requestTarget = _stripQueryString(_request.getRequestTarget());
+	std::string requestTarget = _stripQueryString(_request.getPath());
 	std::string path = _resolvePath(requestTarget, location);
 
 	struct stat st;
@@ -210,7 +210,7 @@ void ResponseBuilder::_processPOST(const ConfigFileParsing::location_t *location
 		return;
 	}
 
-	std::string requestTarget = _stripQueryString(_request.getRequestTarget());
+	std::string requestTarget = _stripQueryString(_request.getPath());
 	std::string path = _resolvePath(requestTarget, location);
 
 	struct stat st;
@@ -290,7 +290,7 @@ void ResponseBuilder::_processDELETE(const ConfigFileParsing::location_t *locati
 		return;
 	}
 
-	std::string requestTarget = _stripQueryString(_request.getRequestTarget());
+	std::string requestTarget = _stripQueryString(_request.getPath());
 	std::string path = _resolvePath(requestTarget, location);
 
 	struct stat st;
@@ -327,11 +327,15 @@ void ResponseBuilder::_directoryListing(const std::string &reqLocation, const st
 	if (!directory)
 	{
 		if (errno == EACCES || errno == ENOTDIR)
+		{
 			_response.setStatusCode(HTTPError::FORBIDDEN);
-		// _response.setBody(_readFile(_config.getDefaultPage(HTTPError::FORBIDDEN)));
+			_response.setBody(utils::readFile(_getErrorPage(HTTPError::FORBIDDEN)));
+		}
 		else
+		{
 			_response.setStatusCode(HTTPError::INTERNAL_SERVER_ERROR);
-		// _response.setBody(_readFile(_config.getDefaultPage(HTTPError::FORBIDDEN)));
+			_response.setBody(utils::readFile(_getErrorPage(HTTPError::INTERNAL_SERVER_ERROR)));
+		}
 
 		return;
 	}
@@ -368,7 +372,11 @@ void ResponseBuilder::_directoryListing(const std::string &reqLocation, const st
 			std::strcmp(dirIt->d_name, "..") == 0)
 			continue;
 
-		filePath = fullPath + std::string(dirIt->d_name);
+		filePath = fullPath;
+		if (!filePath.empty() && filePath[filePath.size() - 1] != '/')
+			filePath += "/";
+		filePath += dirIt->d_name;
+
 		if (stat(filePath.c_str(), &statBuff) == -1)
 			continue;
 
@@ -394,6 +402,8 @@ void ResponseBuilder::_directoryListing(const std::string &reqLocation, const st
 	}
 
 	output << "</table></body></html>";
+
+	_response.setStatusCode(HTTPResponse::OK);
 	_response.setBody(output.str());
 
 	closedir(directory);
@@ -497,7 +507,7 @@ ResponseBuilder::_longestPrefixLocationMatch(const std::string &reqURI) const
 
 bool ResponseBuilder::_isValidCGIScript() const
 {
-	std::string requestPath = ResponseBuilder::_stripQueryString(_request.getRequestTarget());
+	std::string requestPath = ResponseBuilder::_stripQueryString(_request.getPath());
 	std::string scriptPath = ResponseBuilder::_resolvePath(requestPath, _location);
 	std::string path = scriptPath;
 

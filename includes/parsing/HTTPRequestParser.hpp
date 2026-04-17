@@ -38,6 +38,8 @@ class HTTPRequest
 		// Headers
 		t_http_methods						_method;
 		std::string							_requestTarget;
+		std::string							_path;
+    	std::string							_queryString;
 		std::string							_httpVersion;
 		std::string							_host;
 		std::string							_userAgent;
@@ -57,6 +59,7 @@ class HTTPRequest
 		std::string							_body;
 
 		bool		parseMethodToken(const std::string &methodToken);
+		bool		parseRequestTarget(const std::string &target);
 		bool		parseRequestLine(const std::string &line);
 		bool		parseAcceptLanguage(const std::string &value);
 		bool		parseContentType(const std::string &value);
@@ -84,6 +87,8 @@ class HTTPRequest
 
 		void		setRequestTarget(const std::string &target);
 		const std::string	&getRequestTarget() const;
+		const std::string	&getPath() const;
+    	const std::string	&getQueryString() const;
 
 		void		setHTTPVersion(const std::string &version);
 		const std::string	&getHTTPVersion() const;

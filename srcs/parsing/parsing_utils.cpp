@@ -63,9 +63,9 @@ float	parseQualityFloat(const std::string &params, bool &ok)
 	if (!parseQualityParam(params, qValue))
 		return (1.0f);
 	char *end;
-	float q = std::strtof(qValue.c_str(), &end);
+	double q = std::strtod(qValue.c_str(), &end);
 	ok = (end != qValue.c_str() && *end == '\0');
-	return (ok ? q : 1.0f);
+	return (ok ? static_cast<float>(q) : 1.0f);
 }
 
 std::vector<std::string> extractBraces(const std::string& input)
