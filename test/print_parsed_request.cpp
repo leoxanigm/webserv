@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   print_parsed_request.cpp                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42lausanne.c    +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/25 13:36:19 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/03 14:00:59 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/17 13:09:34 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
