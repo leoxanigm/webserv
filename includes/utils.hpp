@@ -11,6 +11,7 @@ namespace utils
 	bool				ft_endswith(const std::string &fullString, const std::string &ending);
 	std::vector<char>	readFile(const std::string &path);
 	bool				_writeFile(const std::string &path, const std::string &body);
+	long long			nowSeconds();
 }
 
 #endif /* UTILS_HPP */
