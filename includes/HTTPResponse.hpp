@@ -9,22 +9,6 @@
 #include "./parsing/HTTPRequestParser.hpp"
 #include "./parsing/ConfigFileParsing.hpp"
 
-// Date
-// Server
-// Content-Type
-// Content-Length
-// Location
-// Connection
-// Allow
-// Content-Language
-// Content-Location
-// Last-Modified
-// Set-Cookie
-// Retry-After
-// WWW-Authenticate
-// Transfer-Encoding if ever supported
-// CGI-generated headers
-
 class HTTPResponse
 {
 public:

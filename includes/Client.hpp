@@ -26,6 +26,7 @@ public:
 
 	int handleRead(int fd);
 	int handleWrite(int fd);
+	int handleTimeout();
 
 	int getConnFd() const;
 	int getPipeReadFd(void) const;
@@ -37,9 +38,7 @@ public:
 	State getState() const;
 	void setState(State state);
 
-	// lets Connection know when to add/remove poll fds
-	bool hasActivePipeRead() const;
-	bool hasActivePipeWrite() const;
+	bool hasTimedOut() const;
 
 private:
 	Client();
@@ -50,7 +49,6 @@ private:
 	HTTPRequest _req;
 
 	long long _lastActivity;
-	long long _startTime;
 
 	int _connFd;
 	int _pipeReadFd;
@@ -68,13 +66,7 @@ private:
 	std::string _cgiRawOutput;
 
 	void _finalizeCGIResponse();
-	bool _hasTimedOut(long long now) const;
-	// TODO
-	// do timeout
-	// bool Client::hasTimedOut(time_t now) const
-	// {
-	// 	return (now - _lastActivity) >= CLIENT_TIMEOUT_SEC;
-	// }
+	void _registerActivity();
 };
 
 #endif /* CLIENT_HPP */

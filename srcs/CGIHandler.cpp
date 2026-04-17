@@ -35,7 +35,7 @@ CGIHandler::~CGIHandler()
 	if (_pid > 0 && !_childExited)
 	{
 		terminate();
-		waitChild();
+		reapChildNonBlocking();
 	}
 }
 
@@ -226,7 +226,7 @@ bool CGIHandler::_init(const std::vector<std::string> &argv,
 		closeWriteFd();
 		closeReadFd();
 		terminate();
-		waitChild();
+		reapChildNonBlocking();
 		return (false);
 	}
 
@@ -292,18 +292,6 @@ int CGIHandler::reapChildNonBlocking()
 	return (1);
 }
 
-int CGIHandler::waitChild()
-{
-	if (_pid <= 0 || _childExited)
-		return (_childExited ? 0 : -1);
-
-	if (waitpid(_pid, &_waitStatus, 0) == -1)
-		return (-1);
-
-	_childExited = true;
-	return (0);
-}
-
 int CGIHandler::getExitStatus() const
 {
 	if (!_childExited)
@@ -321,4 +309,5 @@ void CGIHandler::terminate()
 		return;
 
 	kill(_pid, SIGTERM);
+	kill(_pid, SIGKILL);
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.hpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
+/*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/18 15:43:52 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/07 15:46:21 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/17 15:51:40 by zalemu           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -125,7 +125,7 @@ typedef struct	s_servers
 	std::string				listen_port;
 	std::string				listen_interface;
 	std::string				server_name;
-	int						client_timeout;	// in seconds
+	long long				client_timeout;	// in seconds
 	std::size_t				max_body_size;	// in mega bytes
 
 	s_servers() : 

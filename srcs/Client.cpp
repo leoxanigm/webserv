@@ -16,7 +16,6 @@
 Client::Client(int connFd, const ConfigFileParsing::server_t &server)
 	: _server(server),
 	  _lastActivity(utils::nowSeconds()),
-	  _startTime(utils::nowSeconds()),
 	  _connFd(connFd),
 	  _pipeReadFd(-1),
 	  _pipeWriteFd(-1),
@@ -106,10 +105,22 @@ void Client::_finalizeCGIResponse()
 	_isCGI = false;
 }
 
+void Client::_registerActivity()
+{
+	_lastActivity = utils::nowSeconds();
+}
+
+bool Client::hasTimedOut() const
+{
+	return ((utils::nowSeconds() - _lastActivity) >= _server.client_timeout);
+}
+
 // How do we handle timeout and content length more than accepted value?
 // Also what if body size doesn't match content length value?
 int Client::handleRead(int fd)
 {
+	_registerActivity();
+
 	if (_state != RECV_REQUEST && _state != READ_PIPE)
 		return (0);
 
@@ -144,6 +155,7 @@ int Client::handleRead(int fd)
 
 		if (_req.isComplete())
 		{
+
 			_inBuffer.clear();
 
 			ResponseBuilder response(_req, _server);
@@ -195,6 +207,7 @@ int Client::handleRead(int fd)
 
 	if (_state == READ_PIPE && fd == _pipeReadFd)
 	{
+
 		char buff[4096];
 		ssize_t n = _cgi.readOutput(buff, sizeof(buff));
 
@@ -236,6 +249,8 @@ int Client::handleRead(int fd)
 
 int Client::handleWrite(int fd)
 {
+	_registerActivity();
+
 	if (_state != SEND_RESPONSE && _state != WRITE_PIPE)
 		return (0);
 
@@ -267,11 +282,10 @@ int Client::handleWrite(int fd)
 
 	if (_state == SEND_RESPONSE && fd == _connFd)
 	{
-
 		if (_outBuffer.empty())
 		{
 			_state = CLOSE_CONNECTION;
-			return (0);
+			return (-1);
 		}
 
 		ssize_t send_res = send(fd, _outBuffer.c_str(), _outBuffer.length(), 0);
@@ -280,12 +294,37 @@ int Client::handleWrite(int fd)
 
 		_outBuffer.erase(0, static_cast<std::size_t>(send_res));
 		if (_outBuffer.empty())
+		{
 			_state = CLOSE_CONNECTION;
+			return (-1);
+		}
 
 		return (static_cast<int>(send_res));
 	}
 
 	return (0);
+}
+
+int Client::handleTimeout()
+{
+	ResponseBuilder errResp(_req, _server);
+
+	if (_isCGI)
+	{
+		_cgi.terminate();
+		_cgi.reapChildNonBlocking();
+		errResp.buildErrorRes(HTTPError::GATEWAY_TIMEOUT);
+	}
+	else
+		errResp.buildErrorRes(HTTPError::REQUEST_TIMEOUT);
+
+	_cgi.closeReadFd();
+	_cgi.closeWriteFd();
+
+	_outBuffer = errResp.str();
+	_state = SEND_RESPONSE;
+
+	return (1);
 }
 
 int Client::getConnFd() const { return (_connFd); }
@@ -316,13 +355,3 @@ void Client::closePipeWriteFd()
 Client::State Client::getState() const { return (_state); }
 
 void Client::setState(State state) { _state = state; }
-
-bool Client::hasActivePipeRead() const
-{
-	return (_pipeReadFd > -1 && (_state == READ_PIPE));
-}
-
-bool Client::hasActivePipeWrite() const
-{
-	return (_pipeWriteFd > -1 && (_state == WRITE_PIPE));
-}

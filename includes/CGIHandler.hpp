@@ -32,7 +32,6 @@ public:
 	bool isChildExited() const;
 
 	int reapChildNonBlocking();
-	int waitChild();
 	int getExitStatus() const;
 
 	void terminate();
