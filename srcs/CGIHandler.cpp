@@ -45,16 +45,9 @@ CGIHandler::~CGIHandler()
  */
 bool CGIHandler::startCGI(const ConfigFileParsing::location_t *location, const HTTPRequest &req)
 {
-	std::string requestPath = ResponseBuilder::_stripQueryString(req.getRequestTarget());
+	std::string requestPath = ResponseBuilder::_stripQueryString(req.getPath());
 	std::string scriptPath = ResponseBuilder::_resolvePath(requestPath, location);
 	std::string scriptBasename = scriptPath;
-
-	// TODO
-	// http://localhost:8080/python?test=true doesn't work
-	// but http://localhost:8080/python/?test=true does
-	// also query strings on normal GET not working
-
-	// plus, add default error page html files
 
 	if ((location->cgi_type == PHP && (scriptBasename.find(".php") == std::string::npos)) ||
 		(location->cgi_type == PYTHON && (scriptBasename.find(".py") == std::string::npos)))
@@ -75,11 +68,11 @@ bool CGIHandler::startCGI(const ConfigFileParsing::location_t *location, const H
 	env["GATEWAY_INTERFACE"] = "CGI/1.1";
 	env["REQUEST_METHOD"] = _methodToString(req);
 	env["SCRIPT_NAME"] = requestPath.substr(location->location.size());
-	env["QUERY_STRING"] = _extractQueryString(req.getRequestTarget());
+	env["QUERY_STRING"] = req.getQueryString();
 	env["SERVER_PROTOCOL"] = req.getHTTPVersion();
 	env["CONTENT_LENGTH"] = _contentLenString(req);
 	env["CONTENT_TYPE"] = ResponseBuilder::_getRequestMediaType(req.getContentType());
-	env["REQUEST_URI"] = req.getRequestTarget();
+	env["REQUEST_URI"] = req.getPath();
 	env["SCRIPT_FILENAME"] = scriptBasename;
 	env["REDIRECT_STATUS"] = "200";
 	env["HTTP_COOKIE"] = _buildCookieString(req);
@@ -125,14 +118,6 @@ std::string CGIHandler::_methodToString(const HTTPRequest &req)
 		return "DELETE";
 	}
 	return ("GET");
-}
-
-std::string CGIHandler::_extractQueryString(const std::string &uri)
-{
-	std::string::size_type q = uri.find('?');
-	if (q == std::string::npos)
-		return "";
-	return (uri.substr(q + 1));
 }
 
 std::string CGIHandler::_contentLenString(const HTTPRequest &req)
