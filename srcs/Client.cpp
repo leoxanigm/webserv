@@ -11,11 +11,23 @@
 #include "../includes/parsing/HTTPRequestParser.hpp"
 #include "../includes/ResponseBuilder.hpp"
 #include "../includes/HTTPResponse.hpp"
+#include "../includes/utils.hpp"
 
 Client::Client(int connFd, const ConfigFileParsing::server_t &server)
-	: _server(server), _connFd(connFd), _pipeReadFd(-1), _pipeWriteFd(-1),
-	  _inBuffer(""), _outBuffer(""), _sentSize(0), _state(RECV_REQUEST),
-	  _isCGI(false), _cgiBodyOffset(0), _requestBodyOffset(0), _cgiRawOutput("")
+	: _server(server),
+	  _lastActivity(utils::nowSeconds()),
+	  _startTime(utils::nowSeconds()),
+	  _connFd(connFd),
+	  _pipeReadFd(-1),
+	  _pipeWriteFd(-1),
+	  _inBuffer(""),
+	  _outBuffer(""),
+	  _sentSize(0),
+	  _state(RECV_REQUEST),
+	  _isCGI(false),
+	  _cgiBodyOffset(0),
+	  _requestBodyOffset(0),
+	  _cgiRawOutput("")
 {
 }
 

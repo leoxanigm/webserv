@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <iostream>
 #include <fstream>
+#include <ctime>
 
 #include "../includes/utils.hpp"
 
@@ -74,4 +75,9 @@ bool utils::_writeFile(const std::string &path, const std::string &body)
 		return (false);
 	ofs.write(body.c_str(), body.size());
 	return (!ofs.fail());
+}
+
+long long utils::nowSeconds()
+{
+	return (static_cast<long long>(std::time(NULL)));
 }

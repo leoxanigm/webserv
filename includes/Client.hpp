@@ -2,6 +2,7 @@
 #define CLIENT_HPP
 
 #include <string>
+#include <ctime>
 
 #include "./parsing/ConfigFileParsing.hpp"
 #include "./parsing/HTTPRequestParser.hpp"
@@ -48,6 +49,9 @@ private:
 	const ConfigFileParsing::server_t &_server;
 	HTTPRequest _req;
 
+	long long _lastActivity;
+	long long _startTime;
+
 	int _connFd;
 	int _pipeReadFd;
 	int _pipeWriteFd;
@@ -64,6 +68,13 @@ private:
 	std::string _cgiRawOutput;
 
 	void _finalizeCGIResponse();
+	bool _hasTimedOut(long long now) const;
+	// TODO
+	// do timeout
+	// bool Client::hasTimedOut(time_t now) const
+	// {
+	// 	return (now - _lastActivity) >= CLIENT_TIMEOUT_SEC;
+	// }
 };
 
 #endif /* CLIENT_HPP */

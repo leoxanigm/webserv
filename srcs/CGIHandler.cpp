@@ -321,6 +321,4 @@ void CGIHandler::terminate()
 		return;
 
 	kill(_pid, SIGTERM);
-	// TODO
-	// handle timeout
 }
