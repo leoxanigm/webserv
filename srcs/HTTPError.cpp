@@ -24,6 +24,8 @@ std::string HTTPError::buildErrMsg(int code)
 	{
 	case BAD_REQUEST:
 		return "400 Bad Request";
+	case UNAUTHORIZED:
+		return "401 Unauthorized";
 	case FORBIDDEN:
 		return "403 Forbidden";
 	case NOT_FOUND:
@@ -32,6 +34,8 @@ std::string HTTPError::buildErrMsg(int code)
 		return "405 Method Not Allowed";
 	case NOT_ACCEPTABLE:
 		return "406 Not Acceptable";
+	case REQUEST_TIMEOUT:
+		return "408 Request Timeout";
 	case LENGTH_REQUIRED:
 		return "411 Length Required";
 	case PAYLOAD_TOO_LARGE:
@@ -48,6 +52,8 @@ std::string HTTPError::buildErrMsg(int code)
 		return "501 Not Implemented";
 	case BAD_GATEWAY:
 		return "502 Bad Gateway";
+	case SERVICE_UNAVAILABLE:
+		return "503 Service Unavailable";
 	case GATEWAY_TIMEOUT:
 		return "504 Gateway Timeout";
 	case HTTP_VERSION_NOT_SUPPORTED:

@@ -613,8 +613,6 @@ void HTTPRequest::parseRaw(const std::string &raw)
 	}
 
 	_headerComplete = true;
-	if (tmpBody.str().find("\r\n\r\n") != std::string::npos || tmpBody.str().size() >= _contentLength)
-		_bodyComplete = true;
 
 	std::istringstream rawStream(raw.substr(0, body_begin + 2));
 	std::string line;
@@ -706,5 +704,7 @@ void HTTPRequest::parseRaw(const std::string &raw)
 			_error = 400; // content length is not the same length as the actual body
 			return;
 		}
+
+		_bodyComplete = true;
 	}
 }

@@ -44,6 +44,25 @@ Connection::~Connection()
 void Connection::start()
 {
 	std::cout << "webserv: waiting for connections.. \n";
+
+	// Not sure about this but I think it could show a more complete webserv
+	// But I think it could be improved both on the style and the way the datas are used to be dislayed
+	std::list<t_servers> srvs = _config.getServers();
+	std::list<t_servers>::iterator it;
+
+	for (it = srvs.begin(); it != srvs.end(); ++it)
+	{
+		std::cout << YELLOW << "Server " << UNDERLINE_YELLOW << it->server_name << YELLOW << " avalaible at:" << std::endl;
+
+		std::list<t_locations> locs = it->locations;
+		std::list<t_locations>::iterator it2;
+		for (it2 = locs.begin(); it2 != locs.end(); ++it2)
+		{
+			std::cout << UNDERLINE_YELLOW << "\thttp://" << it->server_name << ":" << it->listen_port << it2->location << std::endl;
+		}
+		std::cout << RESET << std::endl;
+	}
+
 	_runPoll();
 }
 
@@ -109,9 +128,10 @@ void Connection::_initSockets()
 
 void Connection::_runPoll()
 {
-	while (!pollStop && _pollFds.size() > 0) // run until SIGINT
+	int pollCount = 0;
+	while (!pollStop && !_pollFds.empty()) // run until SIGINT
 	{
-		int pollCount = poll(&_pollFds[0], _pollFds.size(), -1);
+		pollCount = poll(&_pollFds[0], _pollFds.size(), 1000);
 
 		if (pollCount < 0)
 		{
@@ -120,8 +140,7 @@ void Connection::_runPoll()
 			throw HTTPError(HTTPError::INTERNAL_SERVER_ERROR);
 		}
 
-		if (pollCount > 0)
-			_processConnections();
+		_processConnections(); // handle read/write or timeout
 	}
 }
 
@@ -252,36 +271,36 @@ void Connection::_processConnections()
 {
 	int fd;
 	short revents;
-	// bool removeClient;
-	// Client *client;
+	int status;
+	bool isSocketFd;
 
 	for (std::size_t i = 0; i < _pollFds.size();)
 	{
-		if (_pollFds[i].revents == 0)
-		{
-			i++;
-			continue;
-		}
-
+		status = 0;
 		fd = _pollFds[i].fd;
 		revents = _pollFds[i].revents;
-		// removeClient = false;
-		// client = 0;
+		isSocketFd = (_sockets.find(fd) != _sockets.end());
 
-		if (_sockets.find(fd) != _sockets.end())
+		if (revents == 0)
 		{
-			if (revents & POLLIN) // New connection
-				_handleNewConnection(fd);
+			if (!isSocketFd)
+				status = _handleClient(fd, TIMEOUT);
 		}
 		else
 		{
-			int status = _handleClient(fd, revents);
-
-			if (status == -1)
+			if (isSocketFd)
 			{
-				_removePollFd(fd);
-				continue;
+				if (revents & POLLIN) // New connection
+					_handleNewConnection(fd);
 			}
+			else
+				status = _handleClient(fd, revents);
+		}
+
+		if (status == -1)
+		{
+			_removePollFd(fd);
+			continue;
 		}
 
 		i++;
@@ -313,32 +332,6 @@ void Connection::_handleNewConnection(int socketFd)
 	// Or create a Logger which will log output info, error, warning to file
 }
 
-// int Connection::_handleClient(int fd, short event)
-// {
-// 	Client *client = _findClient(fd);
-// 	if (!client)
-// 		return (-1);
-
-// 	int status = 0;
-
-// 	if (event & POLLIN)
-// 		status = client->handleRead(fd);
-
-// 	if (event & POLLOUT)
-// 		status = client->handleWrite(fd);
-
-// 	if (client->getState() == Client::READ_PIPE)
-// 		_setFdPollEvent(client->getPipeReadFd(), POLLIN);
-
-// 	if (client->getState() == Client::WRITE_PIPE)
-// 		_setFdPollEvent(client->getPipeWriteFd(), POLLOUT);
-
-// 	if (client->getState() == Client::CLOSE_CONNECTION)
-// 		status = -1;
-
-// 	return (status);
-// }
-
 int Connection::_handleClient(int fd, short revents)
 {
 	Client *client = _findClient(fd);
@@ -346,6 +339,18 @@ int Connection::_handleClient(int fd, short revents)
 		return (-1);
 
 	int status = 0;
+
+	if ((revents & TIMEOUT) == TIMEOUT)
+	{
+		
+		if (client->hasTimedOut())
+		{
+			std::cout << "hasTimedOut " << fd << '\n';
+			_setFdPollEvent(client->getConnFd(), POLLOUT);
+			status = client->handleTimeout();
+		}
+		return (status);
+	}
 
 	// CGI stdout pipe
 	if (fd == client->getPipeReadFd())
@@ -355,14 +360,10 @@ int Connection::_handleClient(int fd, short revents)
 
 		if (client->getState() == Client::SEND_RESPONSE ||
 			client->getState() == Client::CLOSE_CONNECTION)
-		{
 			_removePollFd(fd);
-		}
 
 		if (client->getState() == Client::SEND_RESPONSE)
-		{
 			_setFdPollEvent(client->getConnFd(), POLLOUT);
-		}
 
 		return (status);
 	}
@@ -378,9 +379,7 @@ int Connection::_handleClient(int fd, short revents)
 
 		if (client->getState() == Client::READ_PIPE ||
 			client->getState() == Client::CLOSE_CONNECTION)
-		{
 			_removePollFd(fd);
-		}
 
 		return (status);
 	}
@@ -422,9 +421,7 @@ int Connection::_handleClient(int fd, short revents)
 		status = client->handleWrite(fd);
 
 	if (client->getState() == Client::SEND_RESPONSE)
-	{
 		_setFdPollEvent(client->getConnFd(), POLLOUT);
-	}
 
 	if (client->getState() == Client::CLOSE_CONNECTION)
 		status = -1;

@@ -34,6 +34,11 @@ private:
 		FD_PIPE_WRITE
 	};
 
+	enum timeoutEvent
+	{
+		TIMEOUT = 408
+	};
+
 	struct FdEntry
 	{
 		FdType type;

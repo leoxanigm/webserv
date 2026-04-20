@@ -6,7 +6,7 @@
 /*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/17 18:17:38 by mathboye         ###   ########.fr       */
+/*   Updated: 2026/04/20 15:54:40 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -269,8 +269,9 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf) : _valid(true)
 			else if (tokens[i] == "client_timeout" && i + 2 < tokens.size() && tokens[i + 2] == ";")
 			{
 				if (utils::ft_str_is_digits(tokens[i + 1]))
-					current_server.client_timeout = std::atoi(tokens[i + 1].c_str());
-				if (current_server.client_timeout < 0)
+					current_server.client_timeout = static_cast<long long>(
+						std::atoi(tokens[i + 1].c_str()));
+				if (current_server.client_timeout <= 0)
 				{
 					_valid = false;
 					_error_line += tokens[i] + " " + tokens[i + 1] + "\n";
