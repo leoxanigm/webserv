@@ -18,7 +18,7 @@ print("<head><title>Python CGI Test</title></head>")
 print("<body>")
 
 # test timeout (server should send status 500)
-time.sleep(60)
+# time.sleep(60)
 
 print("<h1>Python CGI works</h1>")
 

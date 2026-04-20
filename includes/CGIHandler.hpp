@@ -52,8 +52,8 @@ private:
 	int _waitStatus;
 
 	bool _init(const std::vector<std::string> &argv,
-			  const std::map<std::string, std::string> &env,
-			  const std::string &workingDir);
+			   const std::map<std::string, std::string> &env,
+			   const std::string &workingDir);
 
 	static void _buildArgv(
 		const std::vector<std::string> &argv, std::vector<char *> &execArgv);
@@ -64,6 +64,9 @@ private:
 	static std::string _methodToString(const HTTPRequest &req);
 	static std::string _contentLenString(const HTTPRequest &req);
 	static std::string _buildCookieString(const HTTPRequest &req);
+	static std::string _resolveCGIRelativeScriptPath(
+		const std::string &requestPath,
+		const ConfigFileParsing::location_t *location);
 };
 
 #endif // CGIHANDLER_HPP

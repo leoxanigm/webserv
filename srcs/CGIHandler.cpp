@@ -46,19 +46,14 @@ CGIHandler::~CGIHandler()
 bool CGIHandler::startCGI(const ConfigFileParsing::location_t *location, const HTTPRequest &req)
 {
 	std::string requestPath = ResponseBuilder::_stripQueryString(req.getPath());
-	std::string scriptPath = ResponseBuilder::_resolvePath(requestPath, location);
+	std::string scriptPath = _resolveCGIRelativeScriptPath(requestPath, location);
 	std::string scriptBasename = scriptPath;
 
 	if ((location->cgi_type == PHP && (scriptBasename.find(".php") == std::string::npos)) ||
 		(location->cgi_type == PYTHON && (scriptBasename.find(".py") == std::string::npos)))
 	{
-		if (scriptBasename[scriptBasename.size() - 1] == '/')
-			scriptBasename += location->index;
-		else
-			scriptBasename += "/" + location->index;
+		scriptBasename += location->index;
 	}
-
-	scriptBasename = scriptBasename.substr(scriptBasename.find_last_of('/') + 1);
 
 	std::vector<std::string> argv;
 	argv.push_back(location->cgi_location);
@@ -132,9 +127,9 @@ std::string CGIHandler::_contentLenString(const HTTPRequest &req)
 
 std::string CGIHandler::_buildCookieString(const HTTPRequest &req)
 {
-	const std::map<std::string, std::string>			&cookies = req.getCookie();
-	std::string											result;
-	std::map<std::string, std::string>::const_iterator	it = cookies.begin();
+	const std::map<std::string, std::string> &cookies = req.getCookie();
+	std::string result;
+	std::map<std::string, std::string>::const_iterator it = cookies.begin();
 
 	for (; it != cookies.end(); ++it)
 	{
@@ -143,6 +138,28 @@ std::string CGIHandler::_buildCookieString(const HTTPRequest &req)
 		result += it->first + "=" + it->second;
 	}
 	return (result);
+}
+
+std::string CGIHandler::_resolveCGIRelativeScriptPath(
+	const std::string &requestPath,
+	const ConfigFileParsing::location_t *location)
+{
+	if (location->location == "/")
+	{
+		if (!requestPath.empty() && requestPath[0] == '/')
+			return requestPath.substr(1);
+		return requestPath;
+	}
+
+	if (requestPath == location->location)
+		return "";
+
+	std::string suffix = requestPath.substr(location->location.size());
+
+	if (!suffix.empty() && suffix[0] == '/')
+		suffix.erase(0, 1);
+
+	return suffix;
 }
 
 bool CGIHandler::_init(const std::vector<std::string> &argv,
