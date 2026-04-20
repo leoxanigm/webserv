@@ -155,7 +155,6 @@ int Client::handleRead(int fd)
 
 		if (_req.isComplete())
 		{
-
 			_inBuffer.clear();
 
 			ResponseBuilder response(_req, _server);

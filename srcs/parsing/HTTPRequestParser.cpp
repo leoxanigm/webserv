@@ -266,6 +266,77 @@ std::string HTTPRequest::percent_decode(const std::string &in)
 	return (out);
 }
 
+bool HTTPRequest::decodeChunkedBody(const std::string &rawBody, std::string &decoded)
+{
+	std::size_t pos = 0;
+	decoded.clear();
+
+	while (true)
+	{
+		// Find chunk-size line
+		std::size_t lineEnd = rawBody.find("\r\n", pos);
+		if (lineEnd == std::string::npos)
+			return (false);
+
+		std::string sizeLine = rawBody.substr(pos, lineEnd - pos);
+
+		// Ignore chunk extensions: "4;foo=bar" -> "4"
+		std::size_t semi = sizeLine.find(';');
+		if (semi != std::string::npos)
+			sizeLine = sizeLine.substr(0, semi);
+
+		if (sizeLine.empty())
+			return (false);
+
+		char *end = NULL;
+		unsigned long chunkSize = std::strtoul(sizeLine.c_str(), &end, 16);
+
+		if (*end != '\0')
+			return (false);
+
+		pos = lineEnd + 2;
+
+		if (chunkSize == 0) // Last chunk
+		{
+			// Consume remaining section until empty line
+			while (true)
+			{
+				std::size_t trailerEnd = rawBody.find("\r\n", pos);
+				if (trailerEnd == std::string::npos)
+					return (false);
+
+				if (trailerEnd == pos)
+				{
+					pos += 2;
+					break;
+				}
+
+				pos = trailerEnd + 2;
+			}
+
+			// Entire rawBody should be consumed
+			if (pos != rawBody.size())
+				return (false);
+
+			return (true);
+		}
+
+		// Need exactly chunkSize bytes + trailing \r\n
+		if (pos + chunkSize + 2 > rawBody.size())
+			return (false);
+
+		decoded.append(rawBody, pos, chunkSize);
+		pos += chunkSize;
+
+		if (rawBody.compare(pos, 2, "\r\n") != 0)
+			return (false);
+
+		pos += 2;
+	}
+
+	return (false);
+}
+
 bool HTTPRequest::parseMethodToken(const std::string &methodToken)
 {
 	if (methodToken == "GET")
@@ -637,6 +708,8 @@ void HTTPRequest::parseRaw(const std::string &raw)
 		if (line.empty())
 			break;
 
+		
+
 		if (!parseHeaderLine(line))
 		{
 			_valid = false;
@@ -657,41 +730,20 @@ void HTTPRequest::parseRaw(const std::string &raw)
 		return;
 	}
 
-	std::string bodyLine;
-	int lineNum = 0;
-	int length = -1;
-
 	// GET /index.html HTTP/1.1\r\nHost: localhost\r\nAccept: text/html\r\nTransfer-Encoding: chunked\r\n\r\n7\r\nWelcome\r\n1c\r\nto Mozilla Developer Network\r\n0\r\n\r\n
 	if (toLower(_transfert_encoding) == "chunked")
 	{
-		while (std::getline(tmpBody, bodyLine) && length != 0)
+		std::string decoded;
+
+		if (!decodeChunkedBody(raw.substr(body_begin + 4), decoded))
 		{
-			if (!bodyLine.empty() && bodyLine[bodyLine.size() - 1] == '\r')
-				bodyLine.erase(bodyLine.size() - 1);
-			if (lineNum % 2 == 0)
-			{
-				char *end;
-				length = std::strtol(bodyLine.c_str(), &end, 16);
-				if (end == bodyLine.c_str() || *end != '\0' || length < 0)
-				{
-					_valid = false;
-					_error = 400; // invalid chunked encoding
-					return;
-				}
-			}
-			else if (lineNum % 2 == 1)
-			{
-				_body += bodyLine;
-			}
-			lineNum++;
-		}
-		if (length != 0)
-		{
+			std::cout << "decoded " << decoded << "\n";
 			_valid = false;
-			_error = 400; // invalid chunked body
+			_error = 400;
 			return;
 		}
 
+		_body = decoded;
 		_bodyComplete = true;
 	}
 	else

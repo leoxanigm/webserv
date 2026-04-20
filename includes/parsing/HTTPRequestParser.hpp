@@ -70,6 +70,7 @@ class HTTPRequest
 		bool		parseCookie(const std::string &value);
 
 		std::string	percent_decode(const std::string &in);
+		bool decodeChunkedBody(const std::string &rawBody, std::string &decoded);
 
 	public:
 		HTTPRequest();

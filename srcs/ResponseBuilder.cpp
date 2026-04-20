@@ -213,14 +213,6 @@ void ResponseBuilder::_processPOST(const ConfigFileParsing::location_t *location
 	std::string requestTarget = _stripQueryString(_request.getPath());
 	std::string path = _resolvePath(requestTarget, location);
 
-	struct stat st;
-	if (stat(path.c_str(), &st) != 0)
-	{
-		_response.setStatusCode(HTTPError::NOT_FOUND);
-		_response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
-		return;
-	}
-
 	std::string mediaType = _getRequestMediaType(_request.getContentType());
 	bool created = false;
 	std::string responseBody;
