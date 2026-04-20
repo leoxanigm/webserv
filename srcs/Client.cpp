@@ -119,10 +119,10 @@ bool Client::hasTimedOut() const
 // Also what if body size doesn't match content length value?
 int Client::handleRead(int fd)
 {
-	_registerActivity();
-
 	if (_state != RECV_REQUEST && _state != READ_PIPE)
 		return (0);
+
+	_registerActivity();
 
 	if (_state == RECV_REQUEST && fd == _connFd)
 	{
@@ -234,9 +234,9 @@ int Client::handleRead(int fd)
 		// CGI done writing
 		if (n == 0)
 		{
+			closePipeReadFd();
 			_cgi.reapChildNonBlocking();
 			_finalizeCGIResponse();
-
 			return (0);
 		}
 
@@ -249,10 +249,10 @@ int Client::handleRead(int fd)
 
 int Client::handleWrite(int fd)
 {
-	_registerActivity();
-
 	if (_state != SEND_RESPONSE && _state != WRITE_PIPE)
 		return (0);
+
+	_registerActivity();
 
 	if (_state == WRITE_PIPE && fd == _pipeWriteFd)
 	{
@@ -341,7 +341,7 @@ void Client::closeConnFd()
 void Client::closePipeReadFd()
 {
 	if (_pipeReadFd > -1)
-		close(_pipeReadFd);
+		_cgi.closeReadFd();
 	_pipeReadFd = -1;
 }
 

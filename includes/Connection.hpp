@@ -17,7 +17,7 @@
 class Connection
 {
 public:
-	Connection(const ConfigFileParsing &config); // Init with config
+	Connection(ConfigFileParsing::server_list_t servers); // Init with list of servers
 	~Connection();
 
 	void start();
@@ -45,7 +45,7 @@ private:
 		Client *client;
 	};
 
-	const ConfigFileParsing &_config;
+	ConfigFileParsing::server_list_t _servers;
 
 	// Associative map for socket fd and corresponding config
 	std::map<int, const ConfigFileParsing::server_t *> _sockets;
@@ -68,11 +68,13 @@ private:
 	void _addClientFd(int fd, Client *client, FdType type);
 	Client *_findClient(int fd) const;
 	void _closeClientFd(Client *client, FdType type);
-	void _removeClient(int fd);
+	void _removeClientFd(int fd);
+	void _removeClient(Client *client);
 	void _removePollFd(std::size_t index);
 	void _removePollFd(int fd);
 
 	void _processConnections();
+	void _processTimeouts();
 	void _handleNewConnection(int socketFd);
 	int _handleClient(int fd, short revents);
 };

@@ -54,7 +54,7 @@ int main(int argc, char const *argv[])
 
 	try
 	{
-		Connection connection(config);
+		Connection connection(config.getServers());
 		connection.start();
 	}
 	catch (const std::exception &e)

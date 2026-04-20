@@ -481,6 +481,11 @@ ResponseBuilder::_longestPrefixLocationMatch(const std::string &reqURI) const
 		const std::string &loc = it->location;
 		std::size_t len = loc.size();
 
+		if (len > reqURI.size())
+            continue;
+
+		// std::cout << "len " << len << " loc " << loc << " reqURI " << reqURI << "\n";
+
 		if (reqURI.compare(0, len, loc) != 0)
 			continue;
 
@@ -493,7 +498,7 @@ ResponseBuilder::_longestPrefixLocationMatch(const std::string &reqURI) const
 		}
 
 		bool exactMatch = (reqURI.size() == len);
-		bool boundaryMatch = (!exactMatch && reqURI[len] == '/');
+		bool boundaryMatch = (reqURI.size() > len && reqURI[len] == '/');
 
 		if ((exactMatch || boundaryMatch) && len > locationLen)
 		{

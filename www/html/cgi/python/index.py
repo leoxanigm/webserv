@@ -18,13 +18,13 @@ print("<head><title>Python CGI Test</title></head>")
 print("<body>")
 
 # test timeout (server should send status 500)
-# time.sleep(60)
+time.sleep(60)
 
 print("<h1>Python CGI works</h1>")
 
 # # test big content (server should send status 500)
-for i in range(1000000):
-    print("<p>You shouldn't see me.</p>")
+# for i in range(1000000):
+#     print("<p>You shouldn't see me.</p>")
 
 
 print("<p><strong>REQUEST_METHOD:</strong> {}</p>".format(html.escape(method)))

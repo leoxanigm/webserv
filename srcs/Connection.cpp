@@ -17,7 +17,7 @@
 
 extern volatile sig_atomic_t pollStop;
 
-Connection::Connection(const ConfigFileParsing &config) : _config(config)
+Connection::Connection(ConfigFileParsing::server_list_t servers) : _servers(servers)
 {
 	_initSockets();
 }
@@ -44,12 +44,9 @@ void Connection::start()
 {
 	std::cout << "webserv: waiting for connections.. \n";
 
-	// Not sure about this but I think it could show a more complete webserv
-	// But I think it could be improved both on the style and the way the datas are used to be dislayed
-	std::list<t_servers> srvs = _config.getServers();
-	std::list<t_servers>::iterator it;
+	std::list<t_servers>::iterator it = _servers.begin();
 
-	for (it = srvs.begin(); it != srvs.end(); ++it)
+	for (; it != _servers.end(); ++it)
 	{
 		std::cout << YELLOW << "Server " << UNDERLINE_YELLOW << it->server_name << YELLOW << " avalaible at:" << std::endl;
 
@@ -67,11 +64,11 @@ void Connection::start()
 
 void Connection::_initSockets()
 {
-	ConfigFileParsing::servers_iterator_t it = _config.getServers().begin();
+	ConfigFileParsing::servers_iterator_t it = _servers.begin();
 	int count = 0;
 	int socketFd = -1;
 
-	for (; it != _config.getServers().end(); it++)
+	for (; it != _servers.end(); it++)
 	{
 		try
 		{
@@ -106,12 +103,18 @@ void Connection::_runPoll()
 			throw HTTPError(HTTPError::INTERNAL_SERVER_ERROR);
 		}
 
-		_processConnections(); // handle read/write or timeout
+		if (pollCount > 0)
+			_processConnections();
+
+		_processTimeouts();
 	}
 }
 
 void Connection::_setFdPollEvent(int fd, short event)
 {
+	if (fd < 0)
+		return;
+
 	std::vector<struct pollfd>::iterator it = _pollFds.begin();
 
 	for (; it != _pollFds.end(); it++)
@@ -184,7 +187,7 @@ void Connection::_closeClientFd(Client *client, FdType type)
 		client->closePipeWriteFd();
 }
 
-void Connection::_removeClient(int fd)
+void Connection::_removeClientFd(int fd)
 {
 	std::map<int, FdEntry>::iterator it = _clientFds.find(fd);
 	if (it == _clientFds.end())
@@ -193,30 +196,50 @@ void Connection::_removeClient(int fd)
 	Client *client = it->second.client;
 	FdType type = it->second.type;
 
-	_closeClientFd(client, type);
-	_clientFds.erase(it);
-
-	// Connection closed, if for some reason pipe fds are not close, close them
-	// now. poll will return POLLERR later and pollfd will be cleaned up on
-	// next iteration.
 	if (type == FD_CLIENT_CONN)
 	{
-		_closeClientFd(client, FD_PIPE_READ);
-		_closeClientFd(client, FD_PIPE_WRITE);
-
-		_clients.remove(client);
-		delete client;
+		_removeClient(client);
+	}
+	else
+	{
+		_closeClientFd(client, type);
+		_clientFds.erase(it);
 	}
 }
 
-/**
- * Close the fd at index and remove the pollfd struct from _pollFds.
- * Changes _pollFds's size
- */
+void Connection::_removeClient(Client *client)
+{
+	int connFd = client->getConnFd();
+	int pipeReadFd = client->getPipeReadFd();
+	int pipeWriteFd = client->getPipeWriteFd();
+
+	if (connFd >= 0)
+	{
+		_closeClientFd(client, FD_CLIENT_CONN);
+		_clientFds.erase(connFd);
+		_removePollFd(connFd);
+	}
+
+	if (pipeReadFd >= 0)
+	{
+		_closeClientFd(client, FD_PIPE_READ);
+		_clientFds.erase(pipeReadFd);
+		_removePollFd(pipeReadFd);
+	}
+
+	if (pipeWriteFd >= 0)
+	{
+		_closeClientFd(client, FD_PIPE_WRITE);
+		_clientFds.erase(pipeWriteFd);
+		_removePollFd(pipeWriteFd);
+	}
+
+	_clients.remove(client);
+	delete client;
+}
+
 void Connection::_removePollFd(std::size_t index)
 {
-	_removeClient(_pollFds[index].fd);
-
 	_pollFds[index] = _pollFds[_pollFds.size() - 1];
 	_pollFds.pop_back();
 }
@@ -238,27 +261,17 @@ void Connection::_processConnections()
 	int fd;
 	short revents;
 	int status;
-	bool isSocketFd;
 
 	for (std::size_t i = 0; i < _pollFds.size();)
 	{
 		status = 0;
 		fd = _pollFds[i].fd;
 		revents = _pollFds[i].revents;
-		isSocketFd = (_sockets.find(fd) != _sockets.end());
 
-		if (revents == 0)
+		if (revents != 0)
 		{
-			if (!isSocketFd)
-				status = _handleClient(fd, TIMEOUT);
-		}
-		else
-		{
-			if (isSocketFd)
-			{
-				if (revents & POLLIN) // New connection
-					_handleNewConnection(fd);
-			}
+			if ((revents & POLLIN) && _sockets.find(fd) != _sockets.end())
+				_handleNewConnection(fd);
 			else
 				status = _handleClient(fd, revents);
 		}
@@ -266,10 +279,36 @@ void Connection::_processConnections()
 		if (status == -1)
 		{
 			_removePollFd(fd);
+			_removeClientFd(fd);
 			continue;
 		}
 
 		i++;
+	}
+}
+
+void Connection::_processTimeouts()
+{
+	std::list<Client *>::iterator it = _clients.begin();
+	Client *client;
+
+	for (; it != _clients.end();)
+	{
+		client = *it;
+		it++;
+
+		if (client->hasTimedOut())
+		{
+			client->handleTimeout();
+
+			if (client->getState() == Client::SEND_RESPONSE && client->getConnFd() >= 0)
+				_setFdPollEvent(client->getConnFd(), POLLOUT);
+			else if (client->getState() == Client::CLOSE_CONNECTION)
+			{
+				_removePollFd(client->getConnFd());
+				_removeClient(client);
+			}
+		}
 	}
 }
 
@@ -284,9 +323,15 @@ void Connection::_handleNewConnection(int socketFd)
 	errno = 0;
 	clientFd = accept(socketFd, (struct sockaddr *)&remoteAddr, &addrLen);
 
-	if (clientFd == -1 || utils::setNonBlocking(clientFd) == -1)
+	if (clientFd == -1)
 	{
 		std::cerr << "ERROR: accepting new client: " << std::strerror(errno) << '\n';
+	}
+
+	if (utils::setNonBlocking(clientFd) == -1)
+	{
+		close(clientFd);
+		std::cerr << "ERROR: setNonBlocking for socket " << socketFd << ": " << std::strerror(errno) << '\n';
 		return;
 	}
 
@@ -306,18 +351,6 @@ int Connection::_handleClient(int fd, short revents)
 
 	int status = 0;
 
-	if ((revents & TIMEOUT) == TIMEOUT)
-	{
-		
-		if (client->hasTimedOut())
-		{
-			std::cout << "hasTimedOut " << fd << '\n';
-			_setFdPollEvent(client->getConnFd(), POLLOUT);
-			status = client->handleTimeout();
-		}
-		return (status);
-	}
-
 	// CGI stdout pipe
 	if (fd == client->getPipeReadFd())
 	{
@@ -326,7 +359,10 @@ int Connection::_handleClient(int fd, short revents)
 
 		if (client->getState() == Client::SEND_RESPONSE ||
 			client->getState() == Client::CLOSE_CONNECTION)
+		{
 			_removePollFd(fd);
+			_removeClientFd(fd);
+		}
 
 		if (client->getState() == Client::SEND_RESPONSE)
 			_setFdPollEvent(client->getConnFd(), POLLOUT);
@@ -345,7 +381,10 @@ int Connection::_handleClient(int fd, short revents)
 
 		if (client->getState() == Client::READ_PIPE ||
 			client->getState() == Client::CLOSE_CONNECTION)
+		{
 			_removePollFd(fd);
+			_removeClientFd(fd);
+		}
 
 		return (status);
 	}
@@ -373,7 +412,10 @@ int Connection::_handleClient(int fd, short revents)
 
 		// For GET/no-body CGI, close CGI stdin so it receives EOF
 		if (pipeWriteFd >= 0)
-			client->closePipeWriteFd();
+		{
+			_removePollFd(pipeWriteFd);
+			_removeClientFd(pipeWriteFd);
+		}
 
 		if (pipeReadFd >= 0 && !_hasPollFd(pipeReadFd))
 		{
