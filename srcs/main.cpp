@@ -30,6 +30,12 @@ int main(int argc, char const *argv[])
 	else
 		file.open(argv[1]);
 
+	if (!file.is_open())
+	{
+		std::cerr << RED << "The given configuration file can not be opened." << RESET << std::endl;
+		return (1);
+	}
+
 	std::string			line;
 	std::string			raw;
 

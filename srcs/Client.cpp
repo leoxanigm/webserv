@@ -67,17 +67,25 @@ void Client::_finalizeCGIResponse()
 		{
 			if (!line.empty() && line[line.size() - 1] == '\r')
 				line.erase(line.size() - 1);
+
 			std::string::size_type colon = line.find(':');
 			if (colon == std::string::npos)
 				continue;
+
 			std::string key = line.substr(0, colon);
 			std::string value = line.substr(colon + 1);
 			std::string::size_type start = value.find_first_not_of(" \t");
+
 			if (start != std::string::npos)
 				value = value.substr(start);
+
 			std::string lkey = key;
 			for (std::size_t i = 0; i < lkey.size(); ++i)
 				lkey[i] = static_cast<char>(::tolower(static_cast<unsigned char>(lkey[i])));
+
+			if (lkey == "content-length") // we generate content length in response builder
+				continue;
+
 			if (lkey == "status")
 			{
 				int code = std::atoi(value.c_str());
@@ -85,6 +93,7 @@ void Client::_finalizeCGIResponse()
 					resp.setStatusCode(code);
 				continue;
 			}
+
 			resp.setHeader(key, value);
 			if (lkey == "content-type")
 				hasContentType = true;

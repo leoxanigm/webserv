@@ -101,9 +101,6 @@ typedef struct	s_locations
 	std::string				root;
 	std::string				index;
 	std::set<std::string>	allowed_methods;
-	// Did I miss some ?
-	// redirection
-	// cgi enabled and related cgi paths
 
 	s_locations() : 
 		location("/"),
