@@ -23,10 +23,6 @@
 # include <sstream>
 # include <fstream>
 
-// TODO:  Done
-// // request timeout seconds
-// // max content length
-
 typedef struct s_HTTPStatusCodePages
 {
 	std::string	OK;
@@ -131,7 +127,7 @@ typedef struct	s_servers
 		listen_interface("[::]"), // test custom host (eg, zalemu.42.fr)
 		server_name("webserv"),
 		client_timeout(60),
-		max_body_size(1) {}
+		max_body_size(1048576) {}
 }	t_servers;
 
 class ConfigFileParsing
@@ -140,7 +136,8 @@ class ConfigFileParsing
 		ConfigFileParsing();
 		ConfigFileParsing(const ConfigFileParsing &obj);
 		ConfigFileParsing &operator=(const ConfigFileParsing &obj);
-		
+		bool	isPortAvailable(std::string port);
+
 		std::list<t_servers>	_servers;
 
 		std::string				_error_line;

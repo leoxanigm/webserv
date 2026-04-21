@@ -45,16 +45,4 @@ private:
 	std::string _dateGMT() const;
 };
 
-// class CGIHandler
-// {
-// public:
-// 	CGIHandler(const HTTPRequest &req, const ConfigFileParsing &config);
-// 	~CGIHandler();
-
-// 	void execute();
-// 	int getReadFd() const;
-// 	int getWriteFd() const;
-// 	pid_t getPid() const;
-// };
-
 #endif /* HTTP_RESPONSE_HPP */

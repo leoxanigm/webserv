@@ -3,15 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   ConfigFileParsing.cpp                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zalemu <zalemu@student.42lausanne.ch>      +#+  +:+       +#+        */
+/*   By: mathboye <mathboye@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/23 14:09:04 by mathboye          #+#    #+#             */
-/*   Updated: 2026/04/17 15:52:41 by zalemu           ###   ########.fr       */
+/*   Updated: 2026/04/20 15:54:40 by mathboye         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../../includes/parsing/ConfigFileParsing.hpp"
 #include "../../includes/parsing/parsing_utils.hpp"
+#include "../../includes/UI.hpp"
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -88,6 +89,19 @@ std::string ConfigFileParsing::getErrorLine(void) const
 	return (_error_line);
 }
 
+bool ConfigFileParsing::isPortAvailable(std::string port)
+{
+	std::list<t_servers> srvs = getServers();
+	std::list<t_servers>::iterator it;
+
+	for (it = srvs.begin(); it != srvs.end(); ++it)
+	{
+		if (it->listen_port == port)
+			return (false);
+	}
+	return (true);
+}
+
 ConfigFileParsing::ConfigFileParsing(std::string raw_conf) : _valid(true)
 {
 	std::vector<std::string> tokens = tokenize(raw_conf);
@@ -111,12 +125,19 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf) : _valid(true)
 
 			if (tokens[i + 2] == "{")
 			{
-				if (validateLocationPath(tokens[i + 1]))
+				bool available = true;
+				for (std::list<t_locations>::iterator it = current_server.locations.begin(); it != current_server.locations.end(); ++it)
+				{
+					if (it->location == tokens[i + 1])
+						available = false;
+				}
+
+				if (validateLocationPath(tokens[i + 1]) && available)
 					current_location.location = tokens[i + 1];
 				else
 				{
 					_valid = false;
-					_error_line += tokens[i] + " " + tokens[i + 1] + "\n";
+					_error_line += tokens[i] + " " + tokens[i + 1] + YELLOW "\n";
 				}
 				i += 2;
 			}
@@ -224,6 +245,19 @@ ConfigFileParsing::ConfigFileParsing(std::string raw_conf) : _valid(true)
 				}
 				else
 					current_server.listen_port = listen_val;
+					
+				if (!utils::ft_str_is_digits(current_server.listen_port))
+				{
+					_valid = false;
+					_error_line += tokens[i] + " " + tokens[i + 1] + "\n";
+				}
+				if ((current_server.listen_port.length() < 4 || current_server.listen_port.length() > 5)
+						|| (std::atoi(current_server.listen_port.c_str()) < 1025 || std::atoi(current_server.listen_port.c_str()) > 65535)
+						|| !isPortAvailable(current_server.listen_port))
+				{
+					_valid = false;
+					_error_line += tokens[i] + " " + tokens[i + 1] + "\n";
+				}
 
 				while (i < tokens.size() && tokens[i] != ";")
 				{

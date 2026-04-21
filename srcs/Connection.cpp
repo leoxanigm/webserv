@@ -1,6 +1,7 @@
 #include <vector>
 #include <list>
 #include <iostream>
+#include <fstream>
 #include <stdexcept>
 #include <cstring>
 #include <unistd.h>
@@ -87,6 +88,39 @@ void Connection::_initSockets()
 
 	if (count == 0)
 		throw HTTPError(HTTPError::INTERNAL_SERVER_ERROR);
+
+	std::ifstream   hostname_file("/etc/hostname");
+	std::string     hostname;
+	if (!std::getline(hostname_file, hostname))
+	{
+		std::ifstream   hosts_file("/etc/hosts");
+		std::string     host;
+		while (std::getline(hosts_file, host))
+		{
+			if (host.find("127.0.0.1") != std::string::npos)
+			{
+				int i = host.length() - 1;
+				while (i != 0 && !isspace(host[i]))
+					--i;
+				hostname = host.substr(i + 1);
+				break ;
+			}
+		}
+		hostname = "127.0.0.1";
+	}
+	std::map<int, const ConfigFileParsing::server_t *>::iterator it2;
+	for (it2 = _sockets.begin(); it2 != _sockets.end(); ++it2)
+	{
+		const t_servers *srv = it2->second;
+		std::cout << YELLOW << "Server " << UNDERLINE_YELLOW << srv->server_name << YELLOW << " avalaible at:" << std::endl;
+		std::list<t_locations>  locs = srv->locations;
+		std::list<t_locations>::iterator it3;
+		for (it3 = locs.begin(); it3 != locs.end(); ++it3)
+		{
+			std::cout << UNDERLINE_YELLOW << "\thttp://" << hostname << ":" << srv->listen_port << it3->location << std::endl;
+		}
+		std::cout << RESET << std::endl;
+	}
 }
 
 void Connection::_runPoll()
@@ -339,8 +373,6 @@ void Connection::_handleNewConnection(int socketFd)
 	_addClient(clientFd, _sockets[socketFd]);
 
 	std::cout << "INFO: new connection on socket " << socketFd << '\n';
-	// Maybe print more info using remoteIP char array?
-	// Or create a Logger which will log output info, error, warning to file
 }
 
 int Connection::_handleClient(int fd, short revents)

@@ -22,9 +22,6 @@
 #include <sstream>
 #include <fstream>
 
-// TODO:  Done
-// // Check invalid URI
-
 typedef enum e_http_methods
 {
 	GET,
