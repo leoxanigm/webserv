@@ -14,10 +14,10 @@
 # define TESTS_HPP
 
 #include <iostream>
-#include "./Socket.hpp"
+#include "./request/Socket.hpp"
 #include "./parsing/ConfigFileParsing.hpp"
 #include "./parsing/HTTPRequestParser.hpp"
-#include "../includes/UI.hpp"
+#include "./UI.hpp"
 
 void	display_parsed_conf_file(const ConfigFileParsing &config);
 void	display_parsed_request(const HTTPRequest &request);

@@ -4,9 +4,9 @@
 #include <string>
 #include <ctime>
 
-#include "./parsing/ConfigFileParsing.hpp"
-#include "./parsing/HTTPRequestParser.hpp"
-#include "./CGIHandler.hpp"
+#include "../parsing/ConfigFileParsing.hpp"
+#include "../parsing/HTTPRequestParser.hpp"
+#include "../response/CGIHandler.hpp"
 
 class Client
 {

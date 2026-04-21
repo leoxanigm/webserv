@@ -10,11 +10,11 @@
 #include <errno.h>
 #include <csignal>
 
-#include "../includes/utils.hpp"
-#include "../includes/Connection.hpp"
-#include "../includes/Client.hpp"
-#include "../includes/HTTPError.hpp"
-#include "../includes/UI.hpp"
+#include "../../includes/utils.hpp"
+#include "../../includes/request/Connection.hpp"
+#include "../../includes/request/Client.hpp"
+#include "../../includes/response/HTTPError.hpp"
+#include "../../includes/UI.hpp"
 
 extern volatile sig_atomic_t pollStop;
 
@@ -44,21 +44,6 @@ Connection::~Connection()
 void Connection::start()
 {
 	std::cout << "webserv: waiting for connections.. \n";
-
-	std::list<t_servers>::iterator it = _servers.begin();
-
-	for (; it != _servers.end(); ++it)
-	{
-		std::cout << YELLOW << "Server " << UNDERLINE_YELLOW << it->server_name << YELLOW << " avalaible at:" << std::endl;
-
-		std::list<t_locations> locs = it->locations;
-		std::list<t_locations>::iterator it2;
-		for (it2 = locs.begin(); it2 != locs.end(); ++it2)
-		{
-			std::cout << UNDERLINE_YELLOW << "\thttp://" << it->server_name << ":" << it->listen_port << it2->location << std::endl;
-		}
-		std::cout << RESET << std::endl;
-	}
 
 	_runPoll();
 }

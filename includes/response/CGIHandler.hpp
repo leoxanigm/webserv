@@ -6,8 +6,8 @@
 #include <map>
 #include <sys/types.h>
 
-#include "./parsing/HTTPRequestParser.hpp"
-#include "HTTPResponse.hpp"
+#include "../parsing/HTTPRequestParser.hpp"
+#include "./HTTPResponse.hpp"
 
 class CGIHandler
 {

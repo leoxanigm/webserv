@@ -9,12 +9,12 @@
 #include <cstring>
 #include <cstdlib>
 
-#include "../includes/CGIHandler.hpp"
-#include "../includes/parsing/ConfigFileParsing.hpp"
-#include "../includes/parsing/HTTPRequestParser.hpp"
-#include "../includes/ResponseBuilder.hpp"
-#include "../includes/HTTPError.hpp"
-#include "../includes/utils.hpp"
+#include "../../includes/response/CGIHandler.hpp"
+#include "../../includes/parsing/ConfigFileParsing.hpp"
+#include "../../includes/parsing/HTTPRequestParser.hpp"
+#include "../../includes/response/ResponseBuilder.hpp"
+#include "../../includes/response/HTTPError.hpp"
+#include "../../includes/utils.hpp"
 
 CGIHandler::CGIHandler()
 	: _readFd(-1),

@@ -6,12 +6,12 @@
 #include <sys/socket.h>
 #include <cstring>
 
-#include "../includes/Client.hpp"
-#include "../includes/HTTPError.hpp"
-#include "../includes/parsing/HTTPRequestParser.hpp"
-#include "../includes/ResponseBuilder.hpp"
-#include "../includes/HTTPResponse.hpp"
-#include "../includes/utils.hpp"
+#include "../../includes/parsing/HTTPRequestParser.hpp"
+#include "../../includes/request/Client.hpp"
+#include "../../includes/response/HTTPError.hpp"
+#include "../../includes/response/ResponseBuilder.hpp"
+#include "../../includes/response/HTTPResponse.hpp"
+#include "../../includes/utils.hpp"
 
 Client::Client(int connFd, const ConfigFileParsing::server_t &server)
 	: _server(server),

@@ -8,7 +8,7 @@
 #include <cstring>
 
 #include "../includes/parsing/ConfigFileParsing.hpp"
-#include "../includes/Connection.hpp"
+#include "../includes/request/Connection.hpp"
 #include "../includes/UI.hpp"
 #include "../includes/tests.hpp"
 

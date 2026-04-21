@@ -10,11 +10,11 @@
 #include <dirent.h>
 #include <errno.h>
 
-#include "../includes/ResponseBuilder.hpp"
-#include "../includes/HTTPError.hpp"
-#include "../includes/parsing/HTTPRequestParser.hpp"
-#include "../includes/parsing/ConfigFileParsing.hpp"
-#include "../includes/utils.hpp"
+#include "../../includes/response/ResponseBuilder.hpp"
+#include "../../includes/response/HTTPError.hpp"
+#include "../../includes/parsing/HTTPRequestParser.hpp"
+#include "../../includes/parsing/ConfigFileParsing.hpp"
+#include "../../includes/utils.hpp"
 
 ResponseBuilder::ResponseBuilder(
 	const HTTPRequest &req, const ConfigFileParsing::server_t &server)

@@ -7,9 +7,9 @@
 #include <list>
 #include <poll.h>
 
-#include "Socket.hpp"
-#include "Client.hpp"
-#include "./parsing/ConfigFileParsing.hpp"
+#include "./Socket.hpp"
+#include "./Client.hpp"
+#include "../parsing/ConfigFileParsing.hpp"
 
 /**
  * A class that handles one socket connection and its related events

@@ -3,8 +3,8 @@
 #include <stdexcept>
 #include <ctime>
 
-#include "../includes/HTTPError.hpp"
-#include "../includes/HTTPResponse.hpp"
+#include "../../includes/response/HTTPError.hpp"
+#include "../../includes/response/HTTPResponse.hpp"
 
 HTTPResponse::HTTPResponse()
 {

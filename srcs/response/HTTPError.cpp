@@ -1,4 +1,4 @@
-#include "../includes/HTTPError.hpp"
+#include "../../includes/response/HTTPError.hpp"
 
 HTTPError::HTTPError(int code)
 	: _code(code), _message(buildErrMsg(code)) {}

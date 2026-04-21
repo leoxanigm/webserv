@@ -1,8 +1,11 @@
 #ifndef RESPONSE_BUILDER_HPP
 #define RESPONSE_BUILDER_HPP
 
-#include "./parsing/HTTPRequestParser.hpp"
-#include "./parsing/ConfigFileParsing.hpp"
+#include <string>
+#include <map>
+
+#include "../parsing/HTTPRequestParser.hpp"
+#include "../parsing/ConfigFileParsing.hpp"
 #include "./HTTPResponse.hpp"
 
 class ResponseBuilder

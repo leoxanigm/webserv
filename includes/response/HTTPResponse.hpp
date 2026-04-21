@@ -6,8 +6,8 @@
 #include <map>
 
 #include "./HTTPError.hpp"
-#include "./parsing/HTTPRequestParser.hpp"
-#include "./parsing/ConfigFileParsing.hpp"
+#include "../parsing/HTTPRequestParser.hpp"
+#include "../parsing/ConfigFileParsing.hpp"
 
 class HTTPResponse
 {
