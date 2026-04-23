@@ -737,7 +737,6 @@ void HTTPRequest::parseRaw(const std::string &raw)
 
 		if (!decodeChunkedBody(raw.substr(body_begin + 4), decoded))
 		{
-			std::cout << "decoded " << decoded << "\n";
 			_valid = false;
 			_error = 400;
 			return;

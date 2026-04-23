@@ -47,8 +47,28 @@ ResponseBuilder::ResponseBuilder(
 					_isCGI = true;
 				else
 				{
-					_response.setStatusCode(HTTPError::NOT_FOUND);
-					_response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
+					try
+					{
+						if (_request.getMethod() == GET)
+							_processGET(location);
+						if (_request.getMethod() == POST)
+							_processPOST(location);
+						if (_request.getMethod() == DELETE)
+							_processDELETE(location);
+					}
+					catch (const HTTPError &e)
+					{
+						_response.setStatusCode(e.code());
+						_response.setBody(utils::readFile(_getErrorPage(e.code())));
+					}
+					catch (const std::exception &e)
+					{
+						_response.setStatusCode(HTTPError::INTERNAL_SERVER_ERROR);
+						_response.setBody(utils::readFile(_getErrorPage(HTTPError::INTERNAL_SERVER_ERROR)));
+					}
+
+					// _response.setStatusCode(HTTPError::NOT_FOUND);
+					// _response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
 				}
 			}
 			else if (location->return_code == 308) // handle redirect first
@@ -474,9 +494,7 @@ ResponseBuilder::_longestPrefixLocationMatch(const std::string &reqURI) const
 		std::size_t len = loc.size();
 
 		if (len > reqURI.size())
-            continue;
-
-		// std::cout << "len " << len << " loc " << loc << " reqURI " << reqURI << "\n";
+			continue;
 
 		if (reqURI.compare(0, len, loc) != 0)
 			continue;
@@ -610,13 +628,31 @@ std::string ResponseBuilder::_stripQueryString(const std::string &uri)
 std::string ResponseBuilder::_getRequestMediaType(
 	const std::map<std::string, std::string> &contentType)
 {
+	std::string mediaType;
+	std::vector<std::pair<std::string, std::string> > params;
+
 	for (std::map<std::string, std::string>::const_iterator it = contentType.begin();
 		 it != contentType.end(); ++it)
 	{
 		if (it->first.find('/') != std::string::npos)
-			return (it->first);
+			mediaType = it->first;
+		else
+			params.push_back(*it);
 	}
-	return ("");
+
+	if (mediaType.empty())
+		return "";
+
+	std::string result = mediaType;
+	for (std::vector<std::pair<std::string, std::string> >::const_iterator it = params.begin();
+		 it != params.end(); ++it)
+	{
+		result += "; ";
+		result += it->first;
+		result += "=";
+		result += it->second;
+	}
+	return result;
 }
 
 bool ResponseBuilder::_parseMultipartFile(

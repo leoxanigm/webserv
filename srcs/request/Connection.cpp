@@ -74,12 +74,12 @@ void Connection::_initSockets()
 	if (count == 0)
 		throw HTTPError(HTTPError::INTERNAL_SERVER_ERROR);
 
-	std::ifstream   hostname_file("/etc/hostname");
-	std::string     hostname;
+	std::ifstream hostname_file("/etc/hostname");
+	std::string hostname;
 	if (!std::getline(hostname_file, hostname))
 	{
-		std::ifstream   hosts_file("/etc/hosts");
-		std::string     host;
+		std::ifstream hosts_file("/etc/hosts");
+		std::string host;
 		while (std::getline(hosts_file, host))
 		{
 			if (host.find("127.0.0.1") != std::string::npos)
@@ -88,7 +88,7 @@ void Connection::_initSockets()
 				while (i != 0 && !isspace(host[i]))
 					--i;
 				hostname = host.substr(i + 1);
-				break ;
+				break;
 			}
 		}
 		hostname = "127.0.0.1";
@@ -98,7 +98,7 @@ void Connection::_initSockets()
 	{
 		const t_servers *srv = it2->second;
 		std::cout << YELLOW << "Server " << UNDERLINE_YELLOW << srv->server_name << YELLOW << " avalaible at:" << std::endl;
-		std::list<t_locations>  locs = srv->locations;
+		std::list<t_locations> locs = srv->locations;
 		std::list<t_locations>::iterator it3;
 		for (it3 = locs.begin(); it3 != locs.end(); ++it3)
 		{
@@ -393,14 +393,21 @@ int Connection::_handleClient(int fd, short revents)
 		if (revents & POLLOUT)
 			status = client->handleWrite(fd);
 
-		if (revents & (POLLHUP | POLLERR))
-			client->setState(Client::READ_PIPE);
-
 		if (client->getState() == Client::READ_PIPE ||
 			client->getState() == Client::CLOSE_CONNECTION)
 		{
 			_removePollFd(fd);
 			_removeClientFd(fd);
+		}
+
+		if (client->getState() == Client::READ_PIPE)
+		{
+			int pipeReadFd = client->getPipeReadFd();
+			if (pipeReadFd >= 0 && !_hasPollFd(pipeReadFd))
+			{
+				_addClientFd(pipeReadFd, client, FD_PIPE_READ);
+				_addPollFd(pipeReadFd, POLLIN | POLLHUP);
+			}
 		}
 
 		return (status);

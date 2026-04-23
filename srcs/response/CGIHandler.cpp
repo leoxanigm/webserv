@@ -215,12 +215,17 @@ bool CGIHandler::_init(const std::vector<std::string> &argv,
 		close(stdoutPipe[0]);
 
 		if (dup2(stdinPipe[0], STDIN_FILENO) == -1)
+		{
+			close(stdinPipe[0]);
+			close(stdoutPipe[1]);
 			std::exit(127);
+		}
 		if (dup2(stdoutPipe[1], STDOUT_FILENO) == -1)
+		{
+			close(stdinPipe[0]);
+			close(stdoutPipe[1]);
 			std::exit(127);
-
-		close(stdinPipe[0]);
-		close(stdoutPipe[1]);
+		}
 
 		execve(execArgv[0], &execArgv[0], &execEnv[0]);
 

@@ -24,7 +24,6 @@ Client::Client(int connFd, const ConfigFileParsing::server_t &server)
 	  _sentSize(0),
 	  _state(RECV_REQUEST),
 	  _isCGI(false),
-	  _cgiBodyOffset(0),
 	  _requestBodyOffset(0),
 	  _cgiRawOutput("")
 {
@@ -180,13 +179,16 @@ int Client::handleRead(int fd)
 
 			if (response.isCGI())
 			{
+				
 				if (_cgi.startCGI(response.getLocation(), _req))
 				{
 					_pipeReadFd = _cgi.getReadFd();
 					_pipeWriteFd = _cgi.getWriteFd();
-					_cgiBodyOffset = 0;
+					_requestBodyOffset = 0;
 					_cgiRawOutput.clear();
 					_isCGI = true;
+
+					
 
 					const std::string &body = _req.getBody();
 					if (!body.empty())
@@ -215,7 +217,6 @@ int Client::handleRead(int fd)
 
 	if (_state == READ_PIPE && fd == _pipeReadFd)
 	{
-
 		char buff[4096];
 		ssize_t n = _cgi.readOutput(buff, sizeof(buff));
 
@@ -266,6 +267,7 @@ int Client::handleWrite(int fd)
 	{
 		if (_requestBodyOffset >= _req.getBody().size())
 		{
+			closePipeWriteFd();
 			_state = READ_PIPE;
 			return (0);
 		}
@@ -281,6 +283,7 @@ int Client::handleWrite(int fd)
 
 		if (_requestBodyOffset >= _req.getBody().size())
 		{
+			closePipeWriteFd();
 			_state = READ_PIPE;
 			return (0);
 		}

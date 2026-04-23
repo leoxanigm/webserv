@@ -61,7 +61,6 @@ private:
 	// CGI
 	CGIHandler _cgi;
 	bool _isCGI;
-	std::size_t _cgiBodyOffset;
 	std::size_t _requestBodyOffset;
 	std::string _cgiRawOutput;
 
