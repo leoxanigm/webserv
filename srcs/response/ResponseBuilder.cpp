@@ -66,9 +66,6 @@ ResponseBuilder::ResponseBuilder(
 						_response.setStatusCode(HTTPError::INTERNAL_SERVER_ERROR);
 						_response.setBody(utils::readFile(_getErrorPage(HTTPError::INTERNAL_SERVER_ERROR)));
 					}
-
-					// _response.setStatusCode(HTTPError::NOT_FOUND);
-					// _response.setBody(utils::readFile(_getErrorPage(HTTPError::NOT_FOUND)));
 				}
 			}
 			else if (location->return_code == 308) // handle redirect first
@@ -237,7 +234,7 @@ void ResponseBuilder::_processPOST(const ConfigFileParsing::location_t *location
 	bool created = false;
 	std::string responseBody;
 
-	if (mediaType == "multipart/form-data")
+	if (mediaType.find("multipart/form-data") != std::string::npos)
 	{
 		std::map<std::string, std::string> contentType = _request.getContentType();
 		std::string boundary = contentType["boundary"];
@@ -365,19 +362,18 @@ void ResponseBuilder::_directoryListing(const std::string &reqLocation, const st
 		parentDir = "/";
 
 	std::ostringstream output;
-	output << "<!DOCTYPE html><html><head><title>" << title
-		   << "</title></head><body><h1>" << title
-		   << "</h1><table><tr><th>Name</th><th>Last modified</th>"
+	output << "<!DOCTYPE html><html><head><title>" << title << "</title>"
+		   << "</head><body><h1>" << title << "</h1>"
+		   << "<table><tr><th>Name</th><th>Last modified</th>"
 		   << "<th>Size</th></tr><tr><th colspan=\"3\"><hr /></th></tr>"
 		   << "<tr><td><a href=\"" << parentDir << "\">Parent Directory</a></td>"
-		   << "<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>";
+		   << "<td>&nbsp;</td><td>&nbsp;</td></tr>";
 
 	struct dirent *dirIt = 0;
 	struct stat statBuff;
 	struct std::tm *tm;
 	char dateStr[256];
 	std::string filePath;
-	std::string href;
 	while ((dirIt = readdir(directory)) != 0)
 	{
 		if (std::strcmp(dirIt->d_name, ".") == 0 ||
@@ -406,7 +402,7 @@ void ResponseBuilder::_directoryListing(const std::string &reqLocation, const st
 		output << "<td>" << dateStr << "</td><td align=\"right\">";
 
 		if (S_ISREG(statBuff.st_mode)) // If regular file, show size
-			output << static_cast<float>(statBuff.st_size) / 1000 << "K\n";
+			output << static_cast<float>(statBuff.st_size) / 1000 << " K";
 		else
 			output << " - \n";
 

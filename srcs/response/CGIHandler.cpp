@@ -13,7 +13,6 @@
 #include "../../includes/parsing/ConfigFileParsing.hpp"
 #include "../../includes/parsing/HTTPRequestParser.hpp"
 #include "../../includes/response/ResponseBuilder.hpp"
-#include "../../includes/response/HTTPError.hpp"
 #include "../../includes/utils.hpp"
 
 CGIHandler::CGIHandler()
@@ -41,7 +40,6 @@ CGIHandler::~CGIHandler()
 
 /**
  * Initializes and starts CGI child process, pipe, etc.
- * Throws HTTPError on error.
  */
 bool CGIHandler::startCGI(const ConfigFileParsing::location_t *location, const HTTPRequest &req)
 {

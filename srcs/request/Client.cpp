@@ -1,6 +1,4 @@
 #include <sstream>
-#include <iostream>
-#include <fstream>
 #include <cstdlib>
 #include <unistd.h>
 #include <sys/socket.h>
@@ -123,8 +121,6 @@ bool Client::hasTimedOut() const
 	return ((utils::nowSeconds() - _lastActivity) >= _server.client_timeout);
 }
 
-// How do we handle timeout and content length more than accepted value?
-// Also what if body size doesn't match content length value?
 int Client::handleRead(int fd)
 {
 	if (_state != RECV_REQUEST && _state != READ_PIPE)
@@ -188,8 +184,6 @@ int Client::handleRead(int fd)
 					_cgiRawOutput.clear();
 					_isCGI = true;
 
-					
-
 					const std::string &body = _req.getBody();
 					if (!body.empty())
 						_state = WRITE_PIPE;
@@ -223,21 +217,22 @@ int Client::handleRead(int fd)
 		if (n > 0)
 		{
 			_cgiRawOutput.append(buff, static_cast<std::size_t>(n));
+
+			if (_cgiRawOutput.size() > static_cast<std::size_t>(_server.max_body_size))
+			{
+				_cgiRawOutput.clear();
+
+				ResponseBuilder errResp(_req, _server);
+				errResp.buildErrorRes(HTTPError::INTERNAL_SERVER_ERROR);
+
+				_outBuffer = errResp.str();
+				_state = SEND_RESPONSE;
+				_cgi.reapChildNonBlocking();
+				_isCGI = false;
+				return (1);
+			}
+
 			return (static_cast<int>(n));
-		}
-
-		if (_cgiRawOutput.size() > static_cast<std::size_t>(_server.max_body_size))
-		{
-			_cgiRawOutput.clear();
-
-			ResponseBuilder errResp(_req, _server);
-			errResp.buildErrorRes(HTTPError::INTERNAL_SERVER_ERROR);
-
-			_outBuffer = errResp.str();
-			_state = SEND_RESPONSE;
-			_cgi.reapChildNonBlocking();
-			_isCGI = false;
-			return (1);
 		}
 
 		// CGI done writing
@@ -265,13 +260,6 @@ int Client::handleWrite(int fd)
 
 	if (_state == WRITE_PIPE && fd == _pipeWriteFd)
 	{
-		if (_requestBodyOffset >= _req.getBody().size())
-		{
-			closePipeWriteFd();
-			_state = READ_PIPE;
-			return (0);
-		}
-
 		ssize_t n = _cgi.writeInput(
 			_req.getBody().c_str() + _requestBodyOffset,
 			_req.getBody().size() - _requestBodyOffset);
@@ -281,7 +269,7 @@ int Client::handleWrite(int fd)
 
 		_requestBodyOffset += n;
 
-		if (_requestBodyOffset >= _req.getBody().size())
+		if (n == 0 || _requestBodyOffset >= _req.getBody().size())
 		{
 			closePipeWriteFd();
 			_state = READ_PIPE;

@@ -674,8 +674,6 @@ bool HTTPRequest::parseHeaderLine(const std::string &line)
 void HTTPRequest::parseRaw(const std::string &raw)
 {
 	std::string::size_type body_begin = raw.find("\r\n\r\n");
-	std::istringstream tmpBody(raw.substr(body_begin + 4));
-
 	if (body_begin == std::string::npos)
 	{
 		_valid = false;
@@ -708,8 +706,6 @@ void HTTPRequest::parseRaw(const std::string &raw)
 		if (line.empty())
 			break;
 
-		
-
 		if (!parseHeaderLine(line))
 		{
 			_valid = false;
@@ -723,6 +719,7 @@ void HTTPRequest::parseRaw(const std::string &raw)
 		_error = 400; // missing header/body separator
 		return;
 	}
+
 	if (!_transfert_encoding.empty() && _contentLength > 0)
 	{
 		_valid = false;
@@ -730,7 +727,13 @@ void HTTPRequest::parseRaw(const std::string &raw)
 		return;
 	}
 
-	// GET /index.html HTTP/1.1\r\nHost: localhost\r\nAccept: text/html\r\nTransfer-Encoding: chunked\r\n\r\n7\r\nWelcome\r\n1c\r\nto Mozilla Developer Network\r\n0\r\n\r\n
+	if (!_transfert_encoding.empty() && toLower(_transfert_encoding) != "chunked") // unsupported
+	{
+		_valid = false;
+		_error = 501;
+		return;
+	}
+
 	if (toLower(_transfert_encoding) == "chunked")
 	{
 		std::string decoded;
@@ -747,9 +750,9 @@ void HTTPRequest::parseRaw(const std::string &raw)
 	}
 	else
 	{
-		_body = tmpBody.str();
+		_body = raw.substr(body_begin + 4);
 
-		if (_body.length() != _contentLength)
+		if (_hasContentLength && _body.length() != _contentLength)
 		{
 			_valid = false;
 			_error = 400; // content length is not the same length as the actual body

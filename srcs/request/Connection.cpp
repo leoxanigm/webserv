@@ -345,6 +345,7 @@ void Connection::_handleNewConnection(int socketFd)
 	if (clientFd == -1)
 	{
 		std::cerr << "ERROR: accepting new client: " << std::strerror(errno) << '\n';
+		return;
 	}
 
 	if (utils::setNonBlocking(clientFd) == -1)

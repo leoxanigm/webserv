@@ -9,7 +9,6 @@
 
 #include "../../includes/utils.hpp"
 #include "../../includes/request/Socket.hpp"
-#include "../../includes/parsing/HTTPRequestParser.hpp"
 
 int Socket::newSocket(const char *host, const char *service)
 {

@@ -40,8 +40,6 @@ private:
 	CGIHandler(const CGIHandler &rhs);
 	CGIHandler &operator=(const CGIHandler &rhs);
 
-	HTTPResponse _response;
-
 	int _readFd;
 	int _writeFd;
 	pid_t _pid;
